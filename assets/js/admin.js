@@ -10,8 +10,7 @@
     'at', 'by', 'for', 'with', 'about', 'against', 'between', 'into', 'through',
     'during', 'before', 'after', 'above', 'below', 'to', 'from', 'up', 'down', 'my',
     'our', 'your', 'their', 'his', 'her', 'its', 'set', 'change', 'configure',
-    'setup', 'add', 'create', 'make', 'install', 'get', 'find', 'search', 'please',
-    'need', 'know', 'show', 'view', 'go', 'last', 'days', 'for', 'about', 'some', 'see', 'modify'
+    'setup', 'please', 'need', 'know', 'show', 'view', 'go', 'last', 'days', 'for', 'about', 'some', 'see', 'modify'
   ]);
 
   // Stemmer function for matching root words (e.g. orders -> order, shipping -> ship)
@@ -47,6 +46,15 @@
     if (word.endsWith('fully')) return word.slice(0, -5);
     if (word.endsWith('ly')) return word.slice(0, -2);
     
+    return word;
+  }
+
+  // Helper function to singularize words (e.g., properties -> property)
+  function singularize(word) {
+    word = word.toLowerCase().trim();
+    if (word.endsWith('ies')) return word.slice(0, -3) + 'y';
+    if (word.endsWith('es') && !word.endsWith('tes') && !word.endsWith('ses')) return word.slice(0, -2);
+    if (word.endsWith('s') && !word.endsWith('ss') && !word.endsWith('us') && !word.endsWith('is')) return word.slice(0, -1);
     return word;
   }
 
@@ -131,10 +139,59 @@
     search(query) {
       try {
         const syntheticPages = [];
+        const cleanQuery = query.replace(/['’]s\b/gi, ''); // Clean possessives e.g., michael's -> michael
         const adminUrl = dacpData.adminUrl || '';
         const homeUrl = adminUrl.replace('wp-admin/', '');
 
-        // 1. ID Parameter extraction (e.g. "user id 5", "post id 10", "order 20", "id 5")
+        // Filler words list to prevent prepositions or noise words from being extracted as names
+        const fillerWords = ['with', 'name', 'username', 'called', 'named', 'user', 'role', 'profile', 'account', 'id', 'email', 'a', 'an', 'the', 'my', 'all', 'new', 'is', 'for', 'whose', 'title'];
+
+        // 1. User Name Extraction (e.g. "I want to edit user with name Michael", "user Michael", "edit michael's user")
+        let userName = null;
+        
+        // Pattern A: "user with name Michael", "user named Michael", "user with username Michael", "user Michael"
+        const matchUserWith = query.match(/user\s+(?:(?:with\s+name|with\s+username|whose\s+name\s+is|named|called|is)\s+)?["']?([a-zA-Z0-9_-]+)["']?/i);
+        if (matchUserWith) {
+          const candidate = matchUserWith[1].trim();
+          if (!fillerWords.includes(candidate.toLowerCase())) {
+            userName = candidate;
+          }
+        }
+        
+        // Pattern B: "name Michael", "with name Michael", "named Michael" anywhere if user keyword is present
+        if (!userName && /user|profile|account|member|role/i.test(query)) {
+          const nameExplicitMatch = query.match(/(?:with\s+name|name\s+is|named|called)\s+["']?([a-zA-Z0-9_-]+)["']?/i);
+          if (nameExplicitMatch) {
+            const candidate = nameExplicitMatch[1].trim();
+            if (!fillerWords.includes(candidate.toLowerCase())) {
+              userName = candidate;
+            }
+          }
+        }
+        
+        // Pattern C: "edit Michael's user" or "modify Michael's profile"
+        if (!userName) {
+          const matchPossessive = query.match(/(?:edit|modify|change|find|view|show|see)\s+([a-zA-Z0-9_-]+)(?:'s|’s)?\s+(?:user|profile|account|role)/i);
+          if (matchPossessive) {
+            const candidate = matchPossessive[1].trim();
+            if (!fillerWords.includes(candidate.toLowerCase())) {
+              userName = candidate;
+            }
+          }
+        }
+
+        if (userName) {
+          syntheticPages.push({
+            title: `Search Users for "${userName}"`,
+            path: "Users › All Users › Search",
+            url: adminUrl + `users.php?s=` + encodeURIComponent(userName),
+            plugin: "WordPress Core",
+            description: `Search the WordPress user database for profiles matching "${userName}".`,
+            keywords: ["user", "search", userName]
+          });
+        }
+
+        // 2. ID Parameter extraction (e.g. "user id 5", "post id 10", "order 20", "id 5")
         const idMatch = query.match(/(?:user|post|page|order|id)\s+(?:id\s+)?(\d+)/i) || query.match(/\bid\s+(\d+)/i);
         if (idMatch) {
           const id = idMatch[1];
@@ -148,7 +205,6 @@
               keywords: ["user", "role", "profile", "edit", id]
             });
           } else if (/order|purchase/i.test(query)) {
-            // Check if WooCommerce uses custom URL page=wc-orders (HPOS) or post.php (legacy)
             const wcOrdersPage = (dacpData.pages || []).find(p => p.url && p.url.includes('page=wc-orders'));
             const orderEditUrl = wcOrdersPage ? (adminUrl + `admin.php?page=wc-orders&action=edit&id=${id}`) : (adminUrl + `post.php?post=${id}&action=edit`);
             
@@ -161,7 +217,6 @@
               keywords: ["order", "purchase", "billing", "edit", id]
             });
           } else {
-            // General post/page edit
             syntheticPages.push({
               title: `Edit Post / Page (ID: #${id})`,
               path: "Posts › Edit Item",
@@ -173,12 +228,11 @@
           }
         }
 
-        // 2. Email Parameter extraction (e.g. "orders from email xyz@test.com")
+        // 3. Email Parameter extraction (e.g. "orders from email xyz@test.com")
         const emailMatch = query.match(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/);
         if (emailMatch) {
           const email = emailMatch[1];
           if (/order|purchase|billing|sale/i.test(query)) {
-            // Check if WooCommerce uses wc-orders page
             const wcOrdersPage = (dacpData.pages || []).find(p => p.url && p.url.includes('page=wc-orders'));
             const ordersSearchUrl = wcOrdersPage ? (adminUrl + `admin.php?page=wc-orders&s=` + encodeURIComponent(email)) : (adminUrl + `edit.php?post_type=shop_order&s=` + encodeURIComponent(email));
             
@@ -191,72 +245,174 @@
               keywords: ["order", "purchase", "search", "email", email]
             });
           } else {
-            // Default to user/customer search
             syntheticPages.push({
               title: `Search Users for "${email}"`,
               path: "Users › All Users › Search",
               url: adminUrl + `users.php?s=` + encodeURIComponent(email),
               plugin: "WordPress Core",
               description: `Search the WordPress user database for profiles matching email "${email}".`,
-              keywords: ["user", "search", "email", email]
+              keywords: ["user", "search", email]
             });
           }
         }
 
-        // 3. Name Parameter extraction (e.g. "property with name abcd", "page named contact")
-        const nameMatch = query.match(/(?:name|named|called)\s+["']?([^"'\s]+)["']?/i) || 
-                            query.match(/(?:property|post|page|cpt)\s+["']?([a-zA-Z0-9_-]+)["']?/i);
-                            
-        if (nameMatch && !idMatch && !emailMatch) {
-          const name = nameMatch[1];
-          let postType = "post";
-          let postTypeLabel = "Post";
-          let postTypePlural = "Posts";
-          let pluginName = "WordPress Core";
+        // 4. Plural & Post Type Listing extraction (e.g. "I want to see all available properties")
+        const listMatch = query.match(/(?:see|view|show|list|all|manage)\s+(?:all\s+)?(?:available\s+)?([a-zA-Z0-9_-]+)/i);
+        if (listMatch && !idMatch && !emailMatch && !userName) {
+          const rawNoun = listMatch[1];
+          const singularNoun = singularize(rawNoun);
+          const pluralNoun = singularNoun.endsWith('y') ? singularNoun.slice(0, -1) + 'ies' : (singularNoun.endsWith('s') ? singularNoun : singularNoun + 's');
           
-          if (/property/i.test(query)) {
-            postType = "property";
-            postTypeLabel = "Property";
-            postTypePlural = "Properties";
-            pluginName = "Custom Post Type";
-          } else if (/page/i.test(query)) {
-            postType = "page";
-            postTypeLabel = "Page";
-            postTypePlural = "Pages";
-          } else if (/post/i.test(query)) {
-            postType = "post";
-            postTypeLabel = "Post";
-            postTypePlural = "Posts";
-          } else if (/product/i.test(query)) {
-            postType = "product";
-            postTypeLabel = "Product";
-            postTypePlural = "Products";
-            pluginName = "WooCommerce";
+          const capitalLabel = singularNoun.charAt(0).toUpperCase() + singularNoun.slice(1);
+          const capitalPlural = pluralNoun.charAt(0).toUpperCase() + pluralNoun.slice(1);
+          
+          if (!fillerWords.includes(singularNoun.toLowerCase())) {
+            let postType = singularNoun.toLowerCase();
+            let pluginName = "Custom Post Type";
+            let url = adminUrl + `edit.php?post_type=${postType}`;
+            
+            if (postType === 'order') {
+              url = adminUrl + `edit.php?post_type=shop_order`;
+              pluginName = "WooCommerce";
+            } else if (postType === 'product') {
+              url = adminUrl + `edit.php?post_type=product`;
+              pluginName = "WooCommerce";
+            }
+            
+            syntheticPages.push({
+              title: `All ${capitalPlural} List`,
+              path: `${capitalPlural} › All ${capitalPlural}`,
+              url: url,
+              plugin: pluginName,
+              description: `View and manage all registered ${pluralNoun.toLowerCase()} in the dashboard list.`,
+              keywords: [postType, pluralNoun, "list", "all"]
+            });
+            
+            syntheticPages.push({
+              title: `View ${capitalPlural} on Frontend`,
+              path: `Site Front › ${capitalPlural}`,
+              url: homeUrl + `?post_type=${postType}`,
+              plugin: "Frontend Link",
+              description: `Visit the public frontend archive for ${pluralNoun.toLowerCase()}.`,
+              keywords: [postType, pluralNoun, "frontend"]
+            });
           }
-          
-          // Synthesize Admin Edit link
+        }
+
+        // 5. Specific Name Parameter extraction (e.g. "property with name abcd")
+        const nameMatch = query.match(/(?:property|post|page|product|cpt)\s+(?:(?:with\s+name|with\s+title|whose\s+name\s+is|named|called|is)\s+)?["']?([a-zA-Z0-9_-]+)["']?/i) || 
+                            query.match(/(?:with\s+name|name\s+is|named|called)\s+["']?([a-zA-Z0-9_-]+)["']?/i);
+                            
+        if (nameMatch && !idMatch && !emailMatch && !userName && syntheticPages.length === 0) {
+          const name = nameMatch[1];
+          if (!fillerWords.includes(name.toLowerCase())) {
+            let postType = "post";
+            let postTypeLabel = "Post";
+            let postTypePlural = "Posts";
+            let pluginName = "WordPress Core";
+            
+            if (/property/i.test(query)) {
+              postType = "property";
+              postTypeLabel = "Property";
+              postTypePlural = "Properties";
+              pluginName = "Custom Post Type";
+            } else if (/page/i.test(query)) {
+              postType = "page";
+              postTypeLabel = "Page";
+              postTypePlural = "Pages";
+            } else if (/post/i.test(query)) {
+              postType = "post";
+              postTypeLabel = "Post";
+              postTypePlural = "Posts";
+            } else if (/product/i.test(query)) {
+              postType = "product";
+              postTypeLabel = "Product";
+              postTypePlural = "Products";
+              pluginName = "WooCommerce";
+            }
+            
+            syntheticPages.push({
+              title: `Edit ${postTypePlural} matching "${name}"`,
+              path: `${postTypePlural} › All ${postTypePlural} › Search`,
+              url: adminUrl + `edit.php?post_type=${postType}&s=` + encodeURIComponent(name),
+              plugin: pluginName,
+              description: `Open the WordPress admin list for ${postTypePlural.toLowerCase()} and search for items named "${name}".`,
+              keywords: [postType, "search", "edit", name]
+            });
+            
+            syntheticPages.push({
+              title: `View "${name}" ${postTypeLabel} on Frontend`,
+              path: `Site Front › Search Results`,
+              url: homeUrl + `?s=` + encodeURIComponent(name) + `&post_type=${postType}`,
+              plugin: "Frontend Link",
+              description: `Visit the public frontend search results for ${postTypePlural.toLowerCase()} matching "${name}".`,
+              keywords: [postType, "frontend", "view", name]
+            });
+          }
+        }
+
+        // 6. Universal Domain & Plugin Intent Extraction Matrix
+        if (/funnel|flow|cartflow/i.test(query)) {
           syntheticPages.push({
-            title: `Edit ${postTypePlural} matching "${name}"`,
-            path: `${postTypePlural} › All ${postTypePlural} › Search`,
-            url: adminUrl + `edit.php?post_type=${postType}&s=` + encodeURIComponent(name),
-            plugin: pluginName,
-            description: `Open the WordPress admin list for ${postTypePlural.toLowerCase()} and search for items named "${name}".`,
-            keywords: [postType, "search", "edit", name]
+            title: 'CartFlows Sales Funnels List',
+            path: 'CartFlows › Funnels',
+            url: adminUrl + 'admin.php?page=cartflows',
+            plugin: 'CartFlows',
+            description: 'View, manage, and optimize all high-converting sales funnels and checkout flows.',
+            keywords: ['funnel', 'funnels', 'flow', 'flows', 'cartflows', 'sales funnel', 'checkout']
           });
           
-          // Synthesize Frontend view link
           syntheticPages.push({
-            title: `View "${name}" ${postTypeLabel} on Frontend`,
-            path: `Site Front › Search Results`,
-            url: homeUrl + `?s=` + encodeURIComponent(name) + `&post_type=${postType}`,
-            plugin: "Frontend Link",
-            description: `Visit the public frontend search results for ${postTypePlural.toLowerCase()} matching "${name}".`,
-            keywords: [postType, "frontend", "view", name]
+            title: 'Create New Funnel / Flow',
+            path: 'CartFlows › Add New Funnel',
+            url: adminUrl + 'admin.php?page=cartflows&action=add-new',
+            plugin: 'CartFlows',
+            description: 'Build a new sales funnel, checkout flow, or upsell step in CartFlows.',
+            keywords: ['create funnel', 'create funnels', 'add funnel', 'new funnel', 'cartflows', 'build funnel']
           });
         }
 
+        if (/store|shop|ecommerce|coupon|shipping|tax|payment|checkout/i.test(query) && !/funnel/i.test(query)) {
+          syntheticPages.push({
+            title: 'WooCommerce Store Settings',
+            path: 'WooCommerce › Settings',
+            url: adminUrl + 'admin.php?page=wc-settings',
+            plugin: 'WooCommerce',
+            description: 'Manage store address, currencies, payments, shipping zones, and tax options.',
+            keywords: ['store', 'shop', 'ecommerce', 'settings', 'woocommerce']
+          });
+        }
+
+        if (/seo|sitemap|schema|meta|search engine|rank/i.test(query)) {
+          const seoPage = (dacpData.pages || []).find(p => /seo|surerank|yoast|rankmath/i.test(p.plugin || p.title || p.path));
+          if (seoPage) {
+            syntheticPages.push({
+              title: seoPage.title,
+              path: seoPage.path,
+              url: seoPage.url,
+              plugin: seoPage.plugin,
+              description: 'Configure SEO search engine optimization, XML sitemaps, and meta tags.',
+              keywords: ['seo', 'sitemap', 'schema', 'meta', 'rank']
+            });
+          }
+        }
+
+        if (/form|contact|lead|submission/i.test(query)) {
+          const formPage = (dacpData.pages || []).find(p => /form|contact/i.test(p.plugin || p.title || p.path));
+          if (formPage) {
+            syntheticPages.push({
+              title: formPage.title,
+              path: formPage.path,
+              url: formPage.url,
+              plugin: formPage.plugin,
+              description: 'Create and manage contact forms, user submissions, and lead entries.',
+              keywords: ['form', 'forms', 'contact', 'lead']
+            });
+          }
+        }
+
         // --- Standard TF-IDF Search ---
-        const queryTokens = tokenizeAndStem(query);
+        const queryTokens = tokenizeAndStem(cleanQuery);
         if (queryTokens.length === 0) {
           return syntheticPages.slice(0, 5);
         }
@@ -297,7 +453,7 @@
           
           // Contextual boosting
           let boost = 0;
-          const queryLower = query.toLowerCase();
+          const queryLower = cleanQuery.toLowerCase();
           const titleLower = (page.title || '').toLowerCase();
           const pluginLower = (page.plugin || '').toLowerCase();
           const pathLower = (page.path || '').toLowerCase();
@@ -364,6 +520,40 @@
   let tfIdfEngine = null;
   let activeWpOrgRequest = null;
 
+  // Helper function to dismiss WordPress Core / Gutenberg Command Palette if open
+  function closeWpCoreCommandPalette() {
+    try {
+      // 1. Mutate Gutenberg / WP Core Command Palette React state
+      if (window.wp && window.wp.data && typeof window.wp.data.dispatch === 'function') {
+        const cmdStore = window.wp.data.dispatch('core/commands');
+        if (cmdStore && typeof cmdStore.close === 'function') {
+          cmdStore.close();
+        }
+      }
+    } catch (e) {}
+
+    try {
+      // 2. Unregister core keyboard shortcut if present
+      if (window.wp && window.wp.data && typeof window.wp.data.dispatch === 'function') {
+        const kbStore = window.wp.data.dispatch('core/keyboard-shortcuts');
+        if (kbStore && typeof kbStore.unregisterShortcut === 'function') {
+          kbStore.unregisterShortcut('core/commands/open');
+        }
+      }
+    } catch (e) {}
+
+    try {
+      // 3. Trigger close buttons on any active modals
+      $('.components-modal__header button, [aria-label="Close dialog"], [aria-label="Close command palette"], .components-modal__frame .components-button').trigger('click');
+
+      // 4. Remove residual modal backdrop DOM elements completely from the DOM
+      $('.components-modal__screen-reader-title, .components-modal__frame, .components-modal__overlay, .components-modal__backdrop, div[role="dialog"]').remove();
+
+      // 5. Clean up body overflow & open classes
+      $('body, html').removeClass('has-modal-open modal-open wp-admin-nav-open').css({'overflow': '', 'height': ''});
+    } catch (err) {}
+  }
+
   // Initialize
   $(document).ready(function() {
     initUI();
@@ -390,25 +580,46 @@
    */
   function bindEvents() {
     // 1. Keyboard shortcut (Ctrl + K or Cmd + K)
-    $(document).on('keydown', function(e) {
+    $(window).add(document).on('keydown', function(e) {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault();
+        if (e.preventDefault) e.preventDefault();
+        if (e.stopPropagation) e.stopPropagation();
+        if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+        
+        closeWpCoreCommandPalette();
         toggleModal();
+        return false;
       }
     });
 
-    // 2. Close modal on ESC key
-    $(document).on('keydown', function(e) {
-      if (e.key === 'Escape' && $modalOverlay.is(':visible')) {
+    // 2. Universal Close on ESC key (keydown & keyup across window, document, and inputs)
+    $(window).add(document).add($modalInput).on('keydown keyup', function(e) {
+      if (e.key === 'Escape' || e.key === 'Esc' || e.keyCode === 27) {
+        if (e.preventDefault) e.preventDefault();
+        if (e.stopPropagation) e.stopPropagation();
+        if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+
+        // Close our plugin modal and force backdrop removal
+        closeModal();
+
+        // Nuclear dismiss WP Core command palette / Gutenberg backdrop
+        closeWpCoreCommandPalette();
+
+        return false;
+      }
+    });
+
+    // 3. Close modal when clicking backdrop or overlay anywhere
+    $(document).on('click', '#wp-admin-nav-palette, .wp-admin-nav-modal-overlay', function(e) {
+      if (e.target === this || $(e.target).hasClass('wp-admin-nav-modal-overlay')) {
         closeModal();
       }
     });
 
-    // 3. Close modal when clicking backdrop
-    $modalOverlay.on('click', function(e) {
-      if (e.target === this) {
-        closeModal();
-      }
+    // 3b. Close modal when clicking ESC hint badge or footer hint
+    $(document).on('click', '.wp-admin-nav-modal-close-hint', function(e) {
+      e.preventDefault();
+      closeModal();
     });
 
     // 4. Modal search input typing
@@ -444,6 +655,43 @@
         }
       }
     });
+
+    // 7. Manual Re-index button handler (Dashboard & Modal)
+    $(document).on('click', '#dacp-reindex-btn, #dacp-reindex-btn-modal', function(e) {
+      e.preventDefault();
+      const $btn = $(this);
+      const originalText = $btn.html();
+      
+      $btn.prop('disabled', true).html('⏳ ' + (dacpData.i18n.reindexing || 'Re-indexing...'));
+      
+      $.ajax({
+        url: typeof ajaxurl !== 'undefined' ? ajaxurl : dacpData.adminUrl + 'admin-ajax.php',
+        type: 'POST',
+        dataType: 'json',
+        data: {
+          action: 'dacp_reindex_now',
+          nonce: dacpData.reindexNonce
+        },
+        success: function(response) {
+          if (response.success && response.data && response.data.pages) {
+            dacpData.pages = response.data.pages;
+            tfIdfEngine = new TfIdfEngine(dacpData.pages);
+            $btn.html('✅ ' + (dacpData.i18n.reindexSuccess || 'Site re-indexed!'));
+          } else {
+            $btn.html('⚠️ Re-index failed');
+          }
+          setTimeout(function() {
+            $btn.prop('disabled', false).html(originalText);
+          }, 3000);
+        },
+        error: function() {
+          $btn.html('⚠️ Error');
+          setTimeout(function() {
+            $btn.prop('disabled', false).html(originalText);
+          }, 3000);
+        }
+      });
+    });
   }
 
   /**
@@ -458,17 +706,36 @@
   }
 
   function openModal() {
-    $modalOverlay.fadeIn(200);
+    closeWpCoreCommandPalette();
+    $modalOverlay
+      .removeClass('is-hidden')
+      .stop(true, true)
+      .attr('style', 'display: flex !important; opacity: 1 !important; visibility: visible !important; pointer-events: auto !important;')
+      .show();
     $modalInput.focus();
-    $('body').css('overflow', 'hidden'); // Prevent scrolling body
+    $('body, html').addClass('wp-admin-nav-open').css('overflow', 'hidden');
     activeIndex = -1;
   }
 
   function closeModal() {
-    $modalOverlay.fadeOut(150);
-    $modalInput.val('');
+    clearTimeout(wporgDebounceTimer);
+    if (activeWpOrgRequest) {
+      activeWpOrgRequest.abort();
+      activeWpOrgRequest = null;
+    }
+    $modalInput.val('').blur();
+    
+    // Forcibly hide overlay with is-hidden class and explicit inline style override
+    $modalOverlay
+      .stop(true, true)
+      .addClass('is-hidden')
+      .attr('style', 'display: none !important; opacity: 0 !important; visibility: hidden !important; pointer-events: none !important;')
+      .hide();
+    
+    $('body, html').removeClass('wp-admin-nav-open modal-open has-modal-open').css({'overflow': '', 'height': ''});
+    
+    closeWpCoreCommandPalette();
     resetResults($modalResults, true);
-    $('body').css('overflow', '');
     activeIndex = -1;
   }
 
@@ -535,12 +802,12 @@
   }
 
   /**
-   * Main Search Processor
+   * Main Search Processor - Debounced by 2.0s (2000ms pause)
    */
   function handleSearch(query, $resultsContainer, isModal) {
     clearTimeout(wporgDebounceTimer);
     
-    // Abort any pending WordPress.org search requests to avoid race conditions
+    // Abort any in-flight WordPress.org search requests
     if (activeWpOrgRequest) {
       activeWpOrgRequest.abort();
       activeWpOrgRequest = null;
@@ -553,23 +820,28 @@
       return;
     }
 
-    // 1. Process local search
-    const localResults = performLocalSearch(query);
-    currentResults = localResults;
+    // Display smooth loading indicator while the user pauses typing (2000ms window)
+    $resultsContainer.html(`
+      <div class="wp-admin-nav-initial-state" style="padding: 24px 20px;">
+        <div class="wp-admin-nav-spinner"></div>
+        <p style="font-size: 13px; color: var(--wp-nav-text-secondary);">Analyzing intent and searching screens...</p>
+      </div>
+    `);
 
-    // 2. Render local results and show WP.org loading state if a WP.org lookup is required
-    const showWpOrg = localResults.length === 0 || isWpOrgTriggerQuery(query);
-    if (showWpOrg) {
-      // Immediately render local results with a spinner in the WP.org section to show active loading
-      renderResults(localResults, $resultsContainer, query, [], true);
-      
-      wporgDebounceTimer = setTimeout(function() {
+    // Trigger local search resolution and plugin search after 2 second pause
+    wporgDebounceTimer = setTimeout(function() {
+      // 1. Process local search
+      const localResults = performLocalSearch(query);
+      currentResults = localResults;
+
+      // 2. Render local results and query WP.org recommendations if triggered
+      const showWpOrg = localResults.length === 0 || isWpOrgTriggerQuery(query);
+      if (showWpOrg) {
         searchWpOrg(query, $resultsContainer, localResults);
-      }, 400);
-    } else {
-      // Show local results only (no WP.org search needed)
-      renderResults(localResults, $resultsContainer, query, [], false);
-    }
+      } else {
+        renderResults(localResults, $resultsContainer, query, [], false);
+      }
+    }, 2000); // 2 seconds pause requirement
   }
 
   /**

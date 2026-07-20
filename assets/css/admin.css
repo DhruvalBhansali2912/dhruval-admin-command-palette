@@ -34,7 +34,15 @@
   padding-top: 10vh;
   box-sizing: border-box;
   font-family: var(--wp-nav-font);
-  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.wp-admin-nav-modal-overlay.is-hidden,
+#wp-admin-nav-palette.is-hidden {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
 }
 
 .wp-admin-nav-modal-container {
@@ -156,6 +164,29 @@
   border-radius: 4px;
   font-family: monospace;
   color: var(--wp-nav-text-secondary);
+}
+
+.wp-admin-nav-reindex-modal-btn {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  color: #f8fafc !important;
+  padding: 4px 12px !important;
+  border-radius: 6px !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  margin-left: auto !important;
+  transition: all 0.2s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
+.wp-admin-nav-reindex-modal-btn:hover {
+  background: #6366f1 !important;
+  border-color: #6366f1 !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4) !important;
 }
 
 /* Search results list */
@@ -530,15 +561,31 @@
   border-color: #e2e8f0;
 }
 
+#dacp-reindex-btn,
 .wp-admin-nav-inline-search-container .wp-admin-nav-btn-outline {
-  background: #ffffff;
-  color: #475569 !important;
-  border: 1px solid #cbd5e1;
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+  font-weight: 600 !important;
+  padding: 8px 16px !important;
+  border-radius: 8px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  font-size: 13px !important;
+  text-decoration: none !important;
 }
 
+#dacp-reindex-btn:hover,
 .wp-admin-nav-inline-search-container .wp-admin-nav-btn-outline:hover {
-  background: #f8fafc;
-  border-color: #94a3b8;
+  background: #6366f1 !important;
+  color: #ffffff !important;
+  border-color: #6366f1 !important;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3) !important;
+  transform: translateY(-1px) !important;
 }
 
 .wp-admin-nav-inline-search-container .wp-admin-nav-section-header {

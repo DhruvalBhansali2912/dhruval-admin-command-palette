@@ -229,29 +229,35 @@ class DACP_Menu_Indexer {
 	}
 
 	/**
-	 * Auto-generate keywords from title string
+	 * Auto-generate keywords from title string and domain dictionary
 	 */
-	private static function generate_keywords( $title, $parent = '' ) {
+	private static function generate_keywords( $title, $parent = '', $slug = '' ) {
 		$keywords = array();
 		
 		// Clean and split title
-		$clean_title = strtolower( preg_replace( '/[^A-Za-z0-9\s]/', '', $title ) );
-		$words = explode( ' ', $clean_title );
+		$clean_title = strtolower( preg_replace( '/[^A-Za-z0-9\s]/', '', (string) $title ) );
+		$words       = explode( ' ', $clean_title );
 		
 		foreach ( $words as $word ) {
-			if ( strlen( $word ) > 3 ) {
+			if ( strlen( $word ) > 2 ) {
 				$keywords[] = $word;
 			}
 		}
 
 		if ( ! empty( $parent ) ) {
-			$clean_parent = strtolower( preg_replace( '/[^A-Za-z0-9\s]/', '', $parent ) );
+			$clean_parent = strtolower( preg_replace( '/[^A-Za-z0-9\s]/', '', (string) $parent ) );
 			$parent_words = explode( ' ', $clean_parent );
 			foreach ( $parent_words as $pword ) {
-				if ( strlen( $pword ) > 3 && ! in_array( $pword, $keywords, true ) ) {
+				if ( strlen( $pword ) > 2 && ! in_array( $pword, $keywords, true ) ) {
 					$keywords[] = $pword;
 				}
 			}
+		}
+
+		// Pull domain concepts if site indexer is available
+		if ( class_exists( 'DACP_Site_Indexer' ) ) {
+			$domain_terms = DACP_Site_Indexer::get_domain_concepts( $title . ' ' . $parent . ' ' . $slug );
+			$keywords     = array_merge( $keywords, $domain_terms );
 		}
 
 		return array_values( array_unique( $keywords ) );
@@ -420,6 +426,32 @@ class DACP_Menu_Indexer {
 				'plugin'      => 'Elementor',
 				'description' => __( 'Configure layout dimensions, custom page types, fonts, page templates, and active integrations.', 'dhruval-admin-command-palette' ),
 				'keywords'    => array( 'elementor', 'page builder', 'fonts', 'templates', 'post types', 'responsive', 'style settings' ),
+			),
+
+			// CartFlows / Funnels
+			'cartflows_funnels' => array(
+				'title'       => __( 'CartFlows Funnels List', 'dhruval-admin-command-palette' ),
+				'path'        => 'CartFlows › Funnels',
+				'url'         => 'admin.php?page=cartflows',
+				'plugin'      => 'CartFlows',
+				'description' => __( 'View, manage, edit, and optimize all sales funnels, checkout flows, and upsell steps.', 'dhruval-admin-command-palette' ),
+				'keywords'    => array( 'cartflows', 'funnel', 'funnels', 'flow', 'flows', 'sales funnel', 'checkout', 'upsell', 'downsell', 'create funnels', 'builder', 'create funnel' ),
+			),
+			'cartflows_add_new' => array(
+				'title'       => __( 'Create New Funnel / Flow', 'dhruval-admin-command-palette' ),
+				'path'        => 'CartFlows › Add New Funnel',
+				'url'         => 'admin.php?page=cartflows&action=add-new',
+				'plugin'      => 'CartFlows',
+				'description' => __( 'Build a new sales funnel, lead generation funnel, or checkout step flow.', 'dhruval-admin-command-palette' ),
+				'keywords'    => array( 'create funnel', 'add funnel', 'new funnel', 'create funnels', 'build funnel', 'cartflows', 'flow', 'sales funnel', 'checkout', 'make funnel' ),
+			),
+			'cartflows_settings' => array(
+				'title'       => __( 'CartFlows Settings', 'dhruval-admin-command-palette' ),
+				'path'        => 'CartFlows › Settings',
+				'url'         => 'admin.php?page=cartflows_settings',
+				'plugin'      => 'CartFlows',
+				'description' => __( 'Configure CartFlows general settings, permalinks, page builder integration, and global checkout settings.', 'dhruval-admin-command-palette' ),
+				'keywords'    => array( 'cartflows settings', 'funnel settings', 'page builder', 'cartflows', 'checkout settings' ),
 			),
 
 			// Updates Pages

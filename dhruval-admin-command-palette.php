@@ -3,7 +3,7 @@
 Plugin Name: Dhruval Admin Command Palette
 Plugin URI: https://inventkid.com/
 Description: A textbox-based Spotlight/Raycast-like navigation command palette for the WordPress Admin Dashboard. Instantly find pages or search plugins on WordPress.org.
-Version: 1.0.0
+Version: 1.3.1
 Author: Dhruval Bhansali
 Author URI: https://profiles.wordpress.org/dhruvalbhansali1608/
 License: GPLv2 or later
@@ -20,6 +20,17 @@ define( 'DACP_URL', plugin_dir_url( __FILE__ ) );
 
 // Include helper classes
 require_once DACP_PATH . 'includes/class-menu-indexer.php';
+require_once DACP_PATH . 'includes/class-site-indexer.php';
+
+// Deactivation hook
+register_deactivation_hook( __FILE__, 'dacp_on_deactivate' );
+
+function dacp_on_deactivate() {
+	$timestamp = wp_next_scheduled( 'dacp_daily_reindex_event' );
+	if ( $timestamp ) {
+		wp_unschedule_event( $timestamp, 'dacp_daily_reindex_event' );
+	}
+}
 
 /**
  * Class DACP_Main
@@ -28,6 +39,9 @@ require_once DACP_PATH . 'includes/class-menu-indexer.php';
 class DACP_Main {
 
 	public function __construct() {
+		// Ensure cron event is scheduled & cache initialized on admin_init
+		add_action( 'admin_init', array( $this, 'ensure_cron_and_cache' ) );
+
 		// Enqueue scripts and styles in the admin dashboard
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 
@@ -39,6 +53,40 @@ class DACP_Main {
 
 		// Add AJAX handler for wordpress.org searches
 		add_action( 'wp_ajax_dacp_search_wporg', array( $this, 'ajax_search_wporg' ) );
+
+		// Add AJAX handler for manual database re-indexing
+		add_action( 'wp_ajax_dacp_reindex_now', array( $this, 'ajax_reindex_now' ) );
+
+		// Scheduled cron & event-driven auto-reindexing
+		add_action( 'dacp_daily_reindex_event', array( 'DACP_Site_Indexer', 'reindex_all' ) );
+		add_action( 'activated_plugin', array( 'DACP_Site_Indexer', 'reindex_all' ) );
+		add_action( 'deactivated_plugin', array( 'DACP_Site_Indexer', 'reindex_all' ) );
+		add_action( 'after_switch_theme', array( 'DACP_Site_Indexer', 'reindex_all' ) );
+
+		// Dequeue Core WP Command Palette to prevent shortcut conflicts
+		add_action( 'admin_enqueue_scripts', array( $this, 'dequeue_core_commands' ), 999 );
+	}
+
+	/**
+	 * Dequeue WordPress Core command palette scripts to prevent keyboard conflicts
+	 */
+	public function dequeue_core_commands() {
+		wp_dequeue_script( 'wp-commands' );
+		wp_deregister_script( 'wp-commands' );
+	}
+
+	/**
+	 * Ensure daily cron event is scheduled and initial database index exists.
+	 */
+	public function ensure_cron_and_cache() {
+		if ( ! wp_next_scheduled( 'dacp_daily_reindex_event' ) ) {
+			wp_schedule_event( time(), 'daily', 'dacp_daily_reindex_event' );
+		}
+
+		$cached = get_option( 'dacp_cached_site_index' );
+		if ( empty( $cached ) && class_exists( 'DACP_Site_Indexer' ) ) {
+			DACP_Site_Indexer::reindex_all();
+		}
 	}
 
 	/**
@@ -66,10 +114,17 @@ class DACP_Main {
 		}
 		?>
 		<div class="wrap wp-admin-nav-dashboard-wrap">
-			<h1><?php esc_html_e( 'Dhruval Admin Command Palette Search Console', 'dhruval-admin-command-palette' ); ?></h1>
-			<p class="description">
-				<?php esc_html_e( 'Type any task in natural language below to jump to the right settings page, or find plugins on WordPress.org if you need new functionality.', 'dhruval-admin-command-palette' ); ?>
-			</p>
+			<div class="wp-admin-nav-dashboard-header" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; flex-wrap: wrap; gap: 16px;">
+				<div>
+					<h1><?php esc_html_e( 'Dhruval Admin Command Palette Search Console', 'dhruval-admin-command-palette' ); ?></h1>
+					<p class="description">
+						<?php esc_html_e( 'Type any task in natural language below to jump to the right settings page, or find plugins on WordPress.org if you need new functionality.', 'dhruval-admin-command-palette' ); ?>
+					</p>
+				</div>
+				<button id="dacp-reindex-btn" class="wp-admin-nav-btn wp-admin-nav-btn-outline" style="white-space: nowrap; margin-top: 8px;">
+					🔄 <?php esc_html_e( 'Re-index Site Now', 'dhruval-admin-command-palette' ); ?>
+				</button>
+			</div>
 			
 			<div class="wp-admin-nav-inline-search-container">
 				<div class="wp-admin-nav-search-box-wrapper">
@@ -106,7 +161,7 @@ class DACP_Main {
 			'dhruval-admin-command-palette-css',
 			DACP_URL . 'assets/css/admin.css',
 			array(),
-			'1.0.0'
+			'1.1.0'
 		);
 
 		// Enqueue JS
@@ -114,12 +169,12 @@ class DACP_Main {
 			'dhruval-admin-command-palette-js',
 			DACP_URL . 'assets/js/admin.js',
 			array( 'jquery' ),
-			'1.0.0',
+			'1.1.0',
 			true
 		);
 
-		// Get all searchable settings pages
-		$search_data = DACP_Menu_Indexer::get_searchable_menu_data();
+		// Get all searchable settings pages from database index cache
+		$search_data = DACP_Site_Indexer::get_site_index();
 
 		// Get active and installed plugins to pass to JS
 		$installed_plugins = array();
@@ -147,7 +202,7 @@ class DACP_Main {
 			}
 		}
 
-		// Localize script to pass menu data and nonce to JS
+		// Localize script to pass menu data and nonces to JS
 		wp_localize_script(
 			'dhruval-admin-command-palette-js',
 			'dacpData',
@@ -158,6 +213,7 @@ class DACP_Main {
 				'installedPlugins' => $installed_plugins,
 				'activePlugins'    => $active_plugins,
 				'nonce'            => wp_create_nonce( 'dacp_search_wporg_nonce' ),
+				'reindexNonce'     => wp_create_nonce( 'dacp_reindex_nonce' ),
 				'i18n'             => array(
 					'noResults'           => __( 'No local pages matched your request.', 'dhruval-admin-command-palette' ),
 					'searchingWpOrg'      => __( 'Searching WordPress.org Plugin Directory...', 'dhruval-admin-command-palette' ),
@@ -170,9 +226,29 @@ class DACP_Main {
 					'author'              => __( 'by', 'dhruval-admin-command-palette' ),
 					'searchPlaceholder'   => __( 'Search admin pages or type a task...', 'dhruval-admin-command-palette' ),
 					'keyboardShortcutTip' => __( 'Press Ctrl+K or Cmd+K from anywhere to search', 'dhruval-admin-command-palette' ),
+					'reindexing'          => __( 'Re-indexing site...', 'dhruval-admin-command-palette' ),
+					'reindexSuccess'      => __( 'Site re-indexed successfully!', 'dhruval-admin-command-palette' ),
 				)
 			)
 		);
+	}
+
+	/**
+	 * AJAX handler for manual database re-indexing
+	 */
+	public function ajax_reindex_now() {
+		check_ajax_referer( 'dacp_reindex_nonce', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( 'Forbidden' );
+		}
+
+		$index = DACP_Site_Indexer::reindex_all();
+
+		wp_send_json_success( array(
+			'count' => count( $index ),
+			'pages' => $index,
+		) );
 	}
 
 	/**
@@ -220,7 +296,7 @@ class DACP_Main {
 			return;
 		}
 		?>
-		<div id="wp-admin-nav-palette" class="wp-admin-nav-modal-overlay" style="display: none;">
+		<div id="wp-admin-nav-palette" class="wp-admin-nav-modal-overlay is-hidden" style="display: none !important;">
 			<div class="wp-admin-nav-modal-container">
 				<div class="wp-admin-nav-modal-header">
 					<span class="wp-admin-nav-modal-search-icon">🔍</span>
@@ -240,6 +316,9 @@ class DACP_Main {
 					<span class="wp-admin-nav-footer-hint">⌨️ <span>↑↓</span> <?php esc_html_e( 'to navigate', 'dhruval-admin-command-palette' ); ?></span>
 					<span class="wp-admin-nav-footer-hint">↩️ <span>Enter</span> <?php esc_html_e( 'to select', 'dhruval-admin-command-palette' ); ?></span>
 					<span class="wp-admin-nav-footer-hint"><span>ESC</span> <?php esc_html_e( 'to close', 'dhruval-admin-command-palette' ); ?></span>
+					<button id="dacp-reindex-btn-modal" class="wp-admin-nav-reindex-modal-btn">
+						🔄 <?php esc_html_e( 'Re-index Site', 'dhruval-admin-command-palette' ); ?>
+					</button>
 				</div>
 			</div>
 		</div>
