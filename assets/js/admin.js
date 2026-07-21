@@ -9,8 +9,8 @@
     'i', 'want', 'to', 'how', 'do', 'can', 'should', 'the', 'a', 'an', 'on', 'in',
     'at', 'by', 'for', 'with', 'about', 'against', 'between', 'into', 'through',
     'during', 'before', 'after', 'above', 'below', 'to', 'from', 'up', 'down', 'my',
-    'our', 'your', 'their', 'his', 'her', 'its', 'set', 'change', 'configure',
-    'setup', 'please', 'need', 'know', 'show', 'view', 'go', 'last', 'days', 'for', 'about', 'some', 'see', 'modify'
+    'our', 'your', 'their', 'his', 'her', 'its',
+    'setup', 'please', 'need', 'know', 'show', 'view', 'go', 'last', 'days', 'for', 'about', 'some', 'see'
   ]);
 
   // Stemmer function for matching root words (e.g. orders -> order, shipping -> ship)
@@ -144,17 +144,34 @@
         const homeUrl = adminUrl.replace('wp-admin/', '');
 
         // Filler words list to prevent prepositions or noise words from being extracted as names
-        const fillerWords = ['with', 'name', 'username', 'called', 'named', 'user', 'role', 'profile', 'account', 'id', 'email', 'a', 'an', 'the', 'my', 'all', 'new', 'is', 'for', 'whose', 'title'];
+        const fillerWords = [
+          'with', 'name', 'title', 'username', 'called', 'named', 'user', 'role', 'profile', 
+          'account', 'id', 'email', 'a', 'an', 'the', 'my', 'all', 'new', 'is', 'for', 'whose',
+          'that', 'this', 'these', 'those', 'which', 'starts', 'starting', 'begins', 'beginning',
+          'ends', 'ending', 'contains', 'containing', 'having', 'like', 'delete', 'remove',
+          'trash', 'edit', 'modify', 'view', 'show', 'search', 'find', 'product', 'post', 'page'
+        ];
 
         // 1. User Name Extraction (e.g. "I want to edit user with name Michael", "user Michael", "edit michael's user")
         let userName = null;
         
-        // Pattern A: "user with name Michael", "user named Michael", "user with username Michael", "user Michael"
-        const matchUserWith = query.match(/user\s+(?:(?:with\s+name|with\s+username|whose\s+name\s+is|named|called|is)\s+)?["']?([a-zA-Z0-9_-]+)["']?/i);
-        if (matchUserWith) {
-          const candidate = matchUserWith[1].trim();
+        // Priority 1: Quoted string inside user query
+        const userQuoteMatch = query.match(/(?:user|profile|account|member|role)\s+.*["']([^"']+)["']/i);
+        if (userQuoteMatch) {
+          const candidate = userQuoteMatch[1].trim();
           if (!fillerWords.includes(candidate.toLowerCase())) {
             userName = candidate;
+          }
+        }
+
+        // Pattern A: "user with name Michael", "user named Michael", "user with username Michael", "user Michael"
+        if (!userName) {
+          const matchUserWith = query.match(/user\s+(?:(?:with\s+name|with\s+username|whose\s+name\s+is|named|called|is)\s+)?["']?([a-zA-Z0-9_-]+)["']?/i);
+          if (matchUserWith) {
+            const candidate = matchUserWith[1].trim();
+            if (!fillerWords.includes(candidate.toLowerCase())) {
+              userName = candidate;
+            }
           }
         }
         
@@ -299,54 +316,85 @@
           }
         }
 
-        // 5. Specific Name Parameter extraction (e.g. "property with name abcd")
-        const nameMatch = query.match(/(?:property|post|page|product|cpt)\s+(?:(?:with\s+name|with\s+title|whose\s+name\s+is|named|called|is)\s+)?["']?([a-zA-Z0-9_-]+)["']?/i) || 
-                            query.match(/(?:with\s+name|name\s+is|named|called)\s+["']?([a-zA-Z0-9_-]+)["']?/i);
-                            
-        if (nameMatch && !idMatch && !emailMatch && !userName && syntheticPages.length === 0) {
-          const name = nameMatch[1];
-          if (!fillerWords.includes(name.toLowerCase())) {
-            let postType = "post";
-            let postTypeLabel = "Post";
-            let postTypePlural = "Posts";
-            let pluginName = "WordPress Core";
-            
-            if (/property/i.test(query)) {
-              postType = "property";
-              postTypeLabel = "Property";
-              postTypePlural = "Properties";
-              pluginName = "Custom Post Type";
-            } else if (/page/i.test(query)) {
-              postType = "page";
-              postTypeLabel = "Page";
-              postTypePlural = "Pages";
-            } else if (/post/i.test(query)) {
-              postType = "post";
-              postTypeLabel = "Post";
-              postTypePlural = "Posts";
-            } else if (/product/i.test(query)) {
-              postType = "product";
-              postTypeLabel = "Product";
-              postTypePlural = "Products";
-              pluginName = "WooCommerce";
+        // 5. Specific Name Parameter extraction (e.g. "I want to edit 'price' for product with name 'Hello'")
+        let extractedName = null;
+
+        // A. Priority 1: Check for explicit entity name patterns like `with name 'Hello'`, `named 'Hello'`, `called 'Hello'`, `starts with 'Hello'`
+        const explicitNameMatch = query.match(/(?:with\s+name|name\s+is|named|called|title\s+is|starts\s+with|starting\s+with|contains|containing)\s+["']?([^"'\s]+)["']?/i);
+        if (explicitNameMatch) {
+          const candidate = explicitNameMatch[1].trim();
+          if (candidate.length > 0 && !fillerWords.includes(candidate.toLowerCase())) {
+            extractedName = candidate;
+          }
+        }
+
+        // B. Priority 2: Check for last quoted string if explicit pattern was not matched
+        if (!extractedName) {
+          const allQuotes = [...query.matchAll(/["']([^"']+)["']/g)];
+          if (allQuotes.length > 0) {
+            const candidate = allQuotes[allQuotes.length - 1][1].trim();
+            if (candidate.length > 0 && !fillerWords.includes(candidate.toLowerCase())) {
+              extractedName = candidate;
             }
-            
+          }
+        }
+                            
+        if (extractedName && !idMatch && !emailMatch && !userName) {
+          let postType = "post";
+          let postTypeLabel = "Post";
+          let postTypePlural = "Posts";
+          let pluginName = "WordPress Core";
+          
+          if (/property/i.test(query)) {
+            postType = "property";
+            postTypeLabel = "Property";
+            postTypePlural = "Properties";
+            pluginName = "Custom Post Type";
+          } else if (/page/i.test(query)) {
+            postType = "page";
+            postTypeLabel = "Page";
+            postTypePlural = "Pages";
+          } else if (/post/i.test(query)) {
+            postType = "post";
+            postTypeLabel = "Post";
+            postTypePlural = "Posts";
+          } else if (/product/i.test(query)) {
+            postType = "product";
+            postTypeLabel = "Product";
+            postTypePlural = "Products";
+            pluginName = "WooCommerce";
+          }
+          
+          const isDeleteQuery = /delete|remove|trash|erase/i.test(query);
+          const actionTitle = isDeleteQuery ? `Search ${postTypePlural} to Delete ("${extractedName}")` : `Search & Edit ${postTypePlural} matching "${extractedName}"`;
+          const actionDesc = isDeleteQuery ? `Open ${postTypePlural.toLowerCase()} list and search for items named "${extractedName}" to delete or move to trash.` : `Open the WordPress admin list for ${postTypePlural.toLowerCase()} and search for items named "${extractedName}".`;
+
+          syntheticPages.push({
+            title: actionTitle,
+            path: `${postTypePlural} › All ${postTypePlural} › Search`,
+            url: adminUrl + `edit.php?post_type=${postType}&s=` + encodeURIComponent(extractedName),
+            plugin: pluginName,
+            description: actionDesc,
+            keywords: [postType, "search", "edit", "delete", extractedName]
+          });
+          
+          if (isDeleteQuery) {
             syntheticPages.push({
-              title: `Edit ${postTypePlural} matching "${name}"`,
-              path: `${postTypePlural} › All ${postTypePlural} › Search`,
-              url: adminUrl + `edit.php?post_type=${postType}&s=` + encodeURIComponent(name),
+              title: `Manage ${postTypePlural} Trash Bin`,
+              path: `${postTypePlural} › Trash`,
+              url: adminUrl + `edit.php?post_type=${postType}&post_status=trash`,
               plugin: pluginName,
-              description: `Open the WordPress admin list for ${postTypePlural.toLowerCase()} and search for items named "${name}".`,
-              keywords: [postType, "search", "edit", name]
+              description: `View deleted ${postTypePlural.toLowerCase()} in the trash bin to permanently erase or restore them.`,
+              keywords: [postType, "trash", "delete", "remove", extractedName]
             });
-            
+          } else {
             syntheticPages.push({
-              title: `View "${name}" ${postTypeLabel} on Frontend`,
+              title: `View "${extractedName}" ${postTypeLabel} on Frontend`,
               path: `Site Front › Search Results`,
-              url: homeUrl + `?s=` + encodeURIComponent(name) + `&post_type=${postType}`,
+              url: homeUrl + `?s=` + encodeURIComponent(extractedName) + `&post_type=${postType}`,
               plugin: "Frontend Link",
-              description: `Visit the public frontend search results for ${postTypePlural.toLowerCase()} matching "${name}".`,
-              keywords: [postType, "frontend", "view", name]
+              description: `Visit the public frontend search results for ${postTypePlural.toLowerCase()} matching "${extractedName}".`,
+              keywords: [postType, "frontend", "view", extractedName]
             });
           }
         }
@@ -384,15 +432,27 @@
         }
 
         if (/seo|sitemap|schema|meta|search engine|rank/i.test(query)) {
-          const seoPage = (dacpData.pages || []).find(p => /seo|surerank|yoast|rankmath/i.test(p.plugin || p.title || p.path));
-          if (seoPage) {
+          const matchingSeoPages = (dacpData.pages || []).filter(p => /seo|surerank|yoast|rankmath/i.test((p.plugin || '') + ' ' + (p.title || '') + ' ' + (p.path || '') + ' ' + (p.url || '')));
+          
+          if (matchingSeoPages.length > 0) {
+            matchingSeoPages.slice(0, 3).forEach(sp => {
+              syntheticPages.push({
+                title: sp.title,
+                path: sp.path,
+                url: sp.url,
+                plugin: sp.plugin || 'SureRank',
+                description: sp.description || 'Configure Search Engine Optimization, XML Sitemaps, Meta Tags, and Schema settings.',
+                keywords: ['seo', 'sitemap', 'schema', 'meta', 'rank', 'surerank']
+              });
+            });
+          } else {
             syntheticPages.push({
-              title: seoPage.title,
-              path: seoPage.path,
-              url: seoPage.url,
-              plugin: seoPage.plugin,
-              description: 'Configure SEO search engine optimization, XML sitemaps, and meta tags.',
-              keywords: ['seo', 'sitemap', 'schema', 'meta', 'rank']
+              title: 'SureRank SEO Dashboard & Settings',
+              path: 'SureRank › Dashboard',
+              url: adminUrl + 'admin.php?page=surerank',
+              plugin: 'SureRank',
+              description: 'Configure SureRank SEO, search engine optimization, meta tags, sitemaps, and rankings.',
+              keywords: ['seo', 'surerank', 'seo settings', 'change seo settings', 'meta', 'sitemap']
             });
           }
         }
@@ -411,85 +471,179 @@
           }
         }
 
-        // --- Standard TF-IDF Search ---
-        const queryTokens = tokenizeAndStem(cleanQuery);
-        if (queryTokens.length === 0) {
+        if (/starter|starter\s*template|starter\s*site|demo\s*import|astra\s*template|prebuilt/i.test(query)) {
+          const starterPage = (dacpData.pages || []).find(p => /starter|astra-site/i.test(p.url || p.path || p.plugin)) || {
+            title: 'Starter Templates Library',
+            path: 'Appearance › Starter Templates',
+            url: adminUrl + 'themes.php?page=starter-templates',
+            plugin: 'Starter Templates'
+          };
+
+          syntheticPages.push({
+            title: starterPage.title || 'Starter Templates Library',
+            path: starterPage.path || 'Appearance › Starter Templates',
+            url: starterPage.url || (adminUrl + 'themes.php?page=starter-templates'),
+            plugin: starterPage.plugin || 'Starter Templates',
+            description: 'Browse, import, and change prebuilt Starter Templates and full site designs.',
+            keywords: ['starter template', 'starter templates', 'change starter template', 'starter sites', 'demo import', 'templates']
+          });
+        }
+
+        if (/user|users|profile|account|member|role/i.test(query)) {
+          if (/add|new|create|register/i.test(query)) {
+            syntheticPages.push({
+              title: 'Add New User',
+              path: 'Users › Add New User',
+              url: adminUrl + 'user-new.php',
+              plugin: 'WordPress Core',
+              description: 'Create a new user account, assign user roles (Administrator, Editor, Author, Subscriber), and set credentials.',
+              keywords: ['add user', 'new user', 'create user', 'add new user', 'register user', 'user']
+            });
+          }
+        }
+
+        if (/comment|comments|discussion|reply|replies|moderation/i.test(query)) {
+          syntheticPages.push({
+            title: 'Manage & Moderate Comments',
+            path: 'Comments › All Comments',
+            url: adminUrl + 'edit-comments.php',
+            plugin: 'WordPress Core',
+            description: 'View, approve, reply to, edit, trash, or mark user comments as spam.',
+            keywords: ['comment', 'comments', 'discussion', 'moderate comments', 'reply']
+          });
+
+          syntheticPages.push({
+            title: 'Discussion & Comment Settings',
+            path: 'Settings › Discussion',
+            url: adminUrl + 'options-discussion.php',
+            plugin: 'WordPress Core',
+            description: 'Configure comment submission rules, moderation queues, spam filters, and avatar displays.',
+            keywords: ['discussion', 'comment settings', 'allow comments', 'enable comments', 'avatars']
+          });
+        }
+
+        // --- Subject Noun Discrimination & Dynamic Title Hierarchy Engine ---
+        const actionModifierSet = new Set([
+          'i', 'want', 'to', 'how', 'do', 'can', 'should', 'the', 'a', 'an', 'on', 'in',
+          'at', 'by', 'for', 'with', 'about', 'against', 'between', 'into', 'through',
+          'during', 'before', 'after', 'above', 'below', 'from', 'up', 'down', 'my',
+          'our', 'your', 'their', 'his', 'her', 'its', 'setup', 'please', 'need', 'know',
+          'show', 'view', 'go', 'last', 'days', 'some', 'see',
+          'add', 'new', 'create', 'make', 'build', 'edit', 'change', 'modify', 'update',
+          'set', 'configure', 'open', 'find', 'search', 'list', 'all', 'manage'
+        ]);
+
+        const queryLower = cleanQuery.toLowerCase().trim();
+        const rawTokens = cleanQuery.toLowerCase().split(/\s+/).filter(w => w.length > 1);
+        const unstemmedTokens = rawTokens.filter(w => !stopWords.has(w));
+        const totalQueryTokens = unstemmedTokens.length;
+
+        // Extract specific subject nouns from query (e.g. "user" from "add new user", "post" from "add new post")
+        const subjectNouns = rawTokens.filter(w => !actionModifierSet.has(w));
+        const hasSubjectNouns = subjectNouns.length > 0;
+
+        if (totalQueryTokens === 0) {
           return syntheticPages.slice(0, 5);
         }
-        
-        const queryTermCounts = {};
-        queryTokens.forEach(token => {
-          queryTermCounts[token] = (queryTermCounts[token] || 0) + 1;
-        });
-        
-        const queryVector = {};
-        let querySumSquares = 0;
-        
-        Object.keys(queryTermCounts).forEach(term => {
-          const idf = this.idf[term] || 0;
-          const tfidf = queryTermCounts[term] * idf;
-          queryVector[term] = tfidf;
-          querySumSquares += tfidf * tfidf;
-        });
-        
-        const queryMagnitude = Math.sqrt(querySumSquares);
-        if (queryMagnitude === 0) {
-          return syntheticPages.slice(0, 5);
-        }
-        
+
+        const topicGoalBoosts = [
+          { pattern: /comment|comments|discussion|reply|replies|moderation/i, targetPattern: /comment|discussion/i },
+          { pattern: /category|categories|tag|tags|taxonomy/i, targetPattern: /category|categories|tag|tags|taxonomy/i },
+          { pattern: /shipping|delivery|carrier|postage/i, targetPattern: /shipping/i },
+          { pattern: /tax|taxes|vat|gst/i, targetPattern: /tax|vat/i },
+          { pattern: /theme|appearance|customizer|customize/i, targetPattern: /theme|customize|appearance/i },
+          { pattern: /menu|menus|navigation|header\s+menu/i, targetPattern: /menu|navigation/i },
+          { pattern: /user|users|profile|role|members/i, targetPattern: /user|profile|role/i }
+        ];
+
         const results = this.pages.map((page, idx) => {
           const docVector = this.docVectors[idx];
           if (!docVector) return { page: page, score: 0 };
           
-          let dotProduct = 0;
-          
-          Object.keys(queryVector).forEach(term => {
-            if (docVector[term]) {
-              dotProduct += queryVector[term] * docVector[term];
-            }
-          });
-          
-          let cosineSimilarity = dotProduct / queryMagnitude;
-          
-          // Contextual boosting
-          let boost = 0;
-          const queryLower = cleanQuery.toLowerCase();
           const titleLower = (page.title || '').toLowerCase();
           const pluginLower = (page.plugin || '').toLowerCase();
           const pathLower = (page.path || '').toLowerCase();
-          
-          if (titleLower.includes(queryLower)) {
-            boost += 60;
-          } else if (pathLower.includes(queryLower)) {
-            boost += 30;
+          const descLower = (page.description || '').toLowerCase();
+          const kwsLower = Array.isArray(page.keywords) ? page.keywords.join(' ').toLowerCase() : (page.keywords && typeof page.keywords === 'object' ? Object.values(page.keywords).join(' ').toLowerCase() : '');
+          const searchableText = `${titleLower} ${pluginLower} ${pathLower} ${kwsLower}`;
+
+          // MANDATORY SUBJECT NOUN DISCRIMINATION:
+          // If query specifies a Subject Noun (e.g. "user" in "add new user"),
+          // candidate page MUST match at least one subject noun in title, path, plugin, or keywords!
+          if (hasSubjectNouns) {
+            const matchesSubjectNoun = subjectNouns.some(subject => {
+              const stemmed = stem(subject);
+              return searchableText.includes(subject) || searchableText.includes(stemmed);
+            });
+
+            if (!matchesSubjectNoun) {
+              return { page: page, score: 0 };
+            }
           }
-          
-          // Exact keyword matching gives extra weight
-          if (Array.isArray(page.keywords) && page.keywords.length > 0) {
-            queryTokens.forEach(token => {
-              if (page.keywords.includes(token)) boost += 15;
-              if (titleLower.includes(token)) boost += 15;
-              if (pluginLower.includes(token)) boost += 8;
-            });
-          } else if (page.keywords && typeof page.keywords === 'object') {
-            const kwValues = Object.values(page.keywords);
-            queryTokens.forEach(token => {
-              if (kwValues.includes(token)) boost += 15;
-              if (titleLower.includes(token)) boost += 15;
-              if (pluginLower.includes(token)) boost += 8;
-            });
-          } else {
-            queryTokens.forEach(token => {
-              if (titleLower.includes(token)) boost += 15;
-              if (pluginLower.includes(token)) boost += 8;
-            });
+
+          let score = 0;
+          let matchedTokensCount = 0;
+
+          // 1. Evaluate Token Matches across Title, Path, Keywords, and Description
+          unstemmedTokens.forEach(token => {
+            const stemmed = stem(token);
+            let tokenMatched = false;
+
+            // Title matches (Highest Priority: +100 points per token)
+            if (titleLower.includes(token) || titleLower.includes(stemmed)) {
+              score += 100;
+              tokenMatched = true;
+            }
+            // Path matches (+50 points per token)
+            else if (pathLower.includes(token) || pathLower.includes(stemmed)) {
+              score += 50;
+              tokenMatched = true;
+            }
+            // Origin Plugin / Keywords matches (+30 points per token)
+            else if (pluginLower.includes(token) || kwsLower.includes(token) || pluginLower.includes(stemmed) || kwsLower.includes(stemmed)) {
+              score += 30;
+              tokenMatched = true;
+            }
+            // Description matches (+5 points per token - low weight to prevent description pollution)
+            else if (descLower.includes(token) || descLower.includes(stemmed)) {
+              score += 5;
+              tokenMatched = true;
+            }
+
+            if (tokenMatched) {
+              matchedTokensCount++;
+            }
+          });
+
+          // 2. Exact Phrase / Multi-Word N-Gram Title Substring Boost (+300 points)
+          if (totalQueryTokens >= 2) {
+            const multiWordPhrase = unstemmedTokens.join(' ');
+            if (titleLower.includes(multiWordPhrase)) {
+              score += 300;
+            } else if (pathLower.includes(multiWordPhrase)) {
+              score += 150;
+            }
           }
+
+          // 3. Topic Goal Boost (+500 points for pages directly answering the primary semantic goal)
+          topicGoalBoosts.forEach(rule => {
+            if (rule.pattern.test(queryLower)) {
+              if (rule.targetPattern.test(searchableText)) {
+                score += 500;
+              }
+            }
+          });
+
+          // 4. Token Coverage Ratio Penalty:
+          const coverageRatio = totalQueryTokens > 0 ? (matchedTokensCount / totalQueryTokens) : 0;
           
-          const finalScore = (cosineSimilarity * 100) + boost;
-          
+          if (totalQueryTokens >= 2 && coverageRatio < 0.6) {
+            score = score * (coverageRatio * coverageRatio);
+          }
+
           return {
             page: page,
-            score: finalScore
+            score: score
           };
         });
         
@@ -498,8 +652,20 @@
           .sort((a, b) => b.score - a.score)
           .map(r => r.page);
         
-        // Merge synthetic deep links at the top
-        return syntheticPages.concat(sortedResults).slice(0, 5);
+        // Merge synthetic deep links & sorted results with strict URL deduplication
+        const combined = syntheticPages.concat(sortedResults);
+        const seenUrls = new Set();
+        const deduplicated = [];
+
+        combined.forEach(p => {
+          const normUrl = (p.url || '').toLowerCase().trim();
+          if (normUrl && !seenUrls.has(normUrl)) {
+            seenUrls.add(normUrl);
+            deduplicated.push(p);
+          }
+        });
+
+        return deduplicated.slice(0, 5);
       } catch (e) {
         console.error('Error in TF-IDF search:', e);
         return [];
@@ -662,7 +828,7 @@
       const $btn = $(this);
       const originalText = $btn.html();
       
-      $btn.prop('disabled', true).html('⏳ ' + (dacpData.i18n.reindexing || 'Re-indexing...'));
+      $btn.prop('disabled', true).html('<svg class="dacp-icon dacp-spin-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg> ' + (dacpData.i18n.reindexing || 'Re-indexing...'));
       
       $.ajax({
         url: typeof ajaxurl !== 'undefined' ? ajaxurl : dacpData.adminUrl + 'admin-ajax.php',
@@ -676,9 +842,9 @@
           if (response.success && response.data && response.data.pages) {
             dacpData.pages = response.data.pages;
             tfIdfEngine = new TfIdfEngine(dacpData.pages);
-            $btn.html('✅ ' + (dacpData.i18n.reindexSuccess || 'Site re-indexed!'));
+            $btn.html('<svg class="dacp-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> ' + (dacpData.i18n.reindexSuccess || 'Site re-indexed!'));
           } else {
-            $btn.html('⚠️ Re-index failed');
+            $btn.html('<svg class="dacp-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg> Re-index failed');
           }
           setTimeout(function() {
             $btn.prop('disabled', false).html(originalText);
@@ -743,7 +909,9 @@
     if (isModal) {
       $target.html(`
         <div class="wp-admin-nav-initial-state">
-          <span class="wp-admin-nav-state-icon">⚡</span>
+          <span class="wp-admin-nav-state-icon">
+            <svg class="dacp-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+          </span>
           <p>${dacpData.i18n.searchPlaceholder}</p>
           <span class="wp-admin-nav-shortcut-badge">${dacpData.i18n.keyboardShortcutTip}</span>
         </div>
@@ -751,7 +919,9 @@
     } else {
       $target.html(`
         <div class="wp-admin-nav-initial-state">
-          <span class="wp-admin-nav-state-icon">💡</span>
+          <span class="wp-admin-nav-state-icon">
+            <svg class="dacp-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"></path><path d="M10 22h4"></path><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1.55.64 2.94 1.7 3.9.76.76 1.23 1.52 1.41 2.5"></path></svg>
+          </span>
           <p>Start typing your request above to get suggestions...</p>
           <div class="wp-admin-nav-suggestions-hint">
             <strong>Try searching for:</strong>
@@ -853,12 +1023,22 @@
   }
 
   /**
-   * Check if query indicates installing a new plugin
+   * Check if query indicates searching for external WordPress.org plugins
    */
   function isWpOrgTriggerQuery(query) {
-    const q = query.toLowerCase();
-    const triggers = ['install', 'plugin', 'download', 'plugin for', 'setup a new', 'add custom', 'wordpress.org', 'wporg'];
-    return triggers.some(t => q.includes(t)) || q.length > 15;
+    const q = query.toLowerCase().trim();
+    const wordCount = q.split(/\s+/).length;
+    
+    // Always trigger WordPress.org recommendations for natural language commands (3+ words)
+    if (wordCount >= 3) return true;
+
+    const featureTerms = [
+      'install', 'download', 'plugin', 'addon', 'extension', 'setup', 'add', 
+      'price', 'pricing', 'discount', 'edit', 'field', 'seo', 'shipping', 
+      'builder', 'form', 'cartflow', 'template', 'theme', 'custom', 'tool', 'bulk'
+    ];
+
+    return featureTerms.some(t => q.includes(t));
   }
 
   /**
@@ -870,7 +1050,9 @@
     if (localPages.length === 0 && wpOrgPlugins.length === 0 && !isLoadingWpOrg) {
       $container.html(`
         <div class="wp-admin-nav-no-results">
-          <span class="wp-admin-nav-state-icon">⚠️</span>
+          <span class="wp-admin-nav-state-icon">
+            <svg class="dacp-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+          </span>
           <p>${dacpData.i18n.noResults}</p>
           <span class="wp-admin-nav-shortcut-badge">Try typing different keywords or a general plugin search.</span>
         </div>

@@ -1,7 +1,7 @@
 <?php
 /**
  * Class DACP_Site_Indexer
- * Universal Background Scanning, Origin Detection & Database Caching Engine.
+ * Universal Background Scanning, Origin Detection, Dynamic Plugin Metadata & Domain Graph Engine.
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -73,6 +73,48 @@ class DACP_Site_Indexer {
 	}
 
 	/**
+	 * Dynamically scan active plugins metadata (Name, Description, URI) from WordPress core.
+	 *
+	 * @return array
+	 */
+	public static function scan_active_plugins_metadata() {
+		if ( ! function_exists( 'get_plugins' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/plugin.php';
+		}
+
+		$all_plugins    = get_plugins();
+		$active_plugins = (array) get_option( 'active_plugins', array() );
+		$plugin_meta    = array();
+
+		foreach ( $active_plugins as $plugin_file ) {
+			if ( isset( $all_plugins[ $plugin_file ] ) ) {
+				$data  = $all_plugins[ $plugin_file ];
+				$name  = ! empty( $data['Name'] ) ? $data['Name'] : $plugin_file;
+				$desc  = ! empty( $data['Description'] ) ? wp_strip_all_tags( $data['Description'] ) : '';
+				$slug  = dirname( $plugin_file );
+				if ( '.' === $slug || empty( $slug ) ) {
+					$slug = sanitize_title( $name );
+				}
+
+				// Extract clean description tokens
+				$clean_desc = strtolower( preg_replace( '/[^A-Za-z0-9\s]/', '', $desc ) );
+				$words      = array_filter( explode( ' ', $clean_desc ), function( $w ) {
+					return strlen( $w ) > 3;
+				} );
+
+				$plugin_meta[ $slug ] = array(
+					'name'        => $name,
+					'description' => $desc,
+					'slug'        => $slug,
+					'keywords'    => array_values( array_unique( $words ) ),
+				);
+			}
+		}
+
+		return $plugin_meta;
+	}
+
+	/**
 	 * Detect origin plugin or theme details for any given item.
 	 *
 	 * @param string $slug  Slug identifier.
@@ -97,25 +139,40 @@ class DACP_Site_Indexer {
 			}
 		}
 
-		// Known Plugins Mapping Matrix
+		// Dynamically check Active Plugins Metadata first
+		$active_meta = self::scan_active_plugins_metadata();
+		foreach ( $active_meta as $pslug => $pmeta ) {
+			if ( false !== strpos( $combined, $pslug ) || false !== strpos( $combined, strtolower( $pmeta['name'] ) ) ) {
+				return array(
+					'type' => 'plugin',
+					'name' => $pmeta['name'],
+					'slug' => $pslug,
+				);
+			}
+		}
+
+		// Fallback Plugins Matrix
 		$plugins_matrix = array(
-			'cartflow'     => 'CartFlows',
-			'woocommerce'  => 'WooCommerce',
-			'wc-'          => 'WooCommerce',
-			'elementor'    => 'Elementor',
-			'surerank'     => 'SureRank',
-			'surecart'     => 'SureCart',
-			'suremembers'  => 'SureMembers',
-			'suretriggers' => 'SureTriggers',
-			'yoast'        => 'Yoast SEO',
-			'rank-math'    => 'Rank Math SEO',
-			'wpforms'      => 'WPForms',
-			'contact-form' => 'Contact Form 7',
-			'wordfence'    => 'Wordfence Security',
-			'updraft'      => 'UpdraftPlus',
-			'jetpack'      => 'Jetpack',
-			'cartflows'    => 'CartFlows',
-			'astro'        => 'Astra',
+			'surerank'          => 'SureRank',
+			'surecart'          => 'SureCart',
+			'suremembers'       => 'SureMembers',
+			'suretriggers'      => 'SureTriggers',
+			'cartflow'          => 'CartFlows',
+			'woocommerce'       => 'WooCommerce',
+			'wc-'               => 'WooCommerce',
+			'elementor'         => 'Elementor',
+			'starter-templates' => 'Starter Templates',
+			'starter-sites'     => 'Starter Templates',
+			'astra-sites'       => 'Starter Templates',
+			'yoast'             => 'Yoast SEO',
+			'rank-math'         => 'Rank Math SEO',
+			'wpforms'           => 'WPForms',
+			'contact-form'      => 'Contact Form 7',
+			'wordfence'         => 'Wordfence Security',
+			'updraft'           => 'UpdraftPlus',
+			'jetpack'           => 'Jetpack',
+			'cartflows'         => 'CartFlows',
+			'astro'             => 'Astra',
 		);
 
 		foreach ( $plugins_matrix as $key => $plugin_name ) {
@@ -156,14 +213,15 @@ class DACP_Site_Indexer {
 		$s          = strtolower( $plugin_or_slug );
 		$concepts   = array();
 		$dictionary = array(
+			'surerank'    => array( 'seo', 'search engine', 'sitemap', 'schema', 'meta', 'analytics', 'ranking', 'google', 'seo settings', 'meta title', 'meta description' ),
+			'seo'         => array( 'seo', 'search engine', 'meta', 'sitemap', 'schema', 'robots', 'indexing', 'rank', 'keywords', 'google', 'seo settings', 'search console' ),
+			'starter'     => array( 'starter template', 'starter templates', 'change starter template', 'import template', 'starter site', 'starter sites', 'demo import', 'prebuilt sites', 'astra templates', 'template library' ),
 			'cartflow'    => array( 'funnel', 'funnels', 'sales funnel', 'checkout flow', 'flow', 'flows', 'upsell', 'downsell', 'order bump', 'step', 'steps', 'conversion', 'checkout' ),
 			'funnel'      => array( 'funnel', 'funnels', 'sales funnel', 'checkout flow', 'flow', 'flows', 'upsell', 'downsell', 'step', 'steps' ),
 			'woo'         => array( 'store', 'shop', 'ecommerce', 'product', 'products', 'order', 'orders', 'sale', 'sales', 'coupon', 'coupons', 'shipping', 'tax', 'checkout', 'payment', 'gateways', 'inventory', 'stock' ),
 			'product'     => array( 'item', 'merchandise', 'store product', 'catalog', 'pricing', 'inventory' ),
 			'order'       => array( 'purchase', 'transaction', 'customer order', 'billing', 'invoice' ),
 			'elementor'   => array( 'page builder', 'builder', 'landing page', 'design', 'layout', 'widget', 'widgets', 'template', 'templates', 'canvas', 'header footer' ),
-			'surerank'    => array( 'seo', 'search engine', 'sitemap', 'schema', 'meta', 'analytics', 'ranking', 'google' ),
-			'seo'         => array( 'search engine', 'meta', 'sitemap', 'schema', 'robots', 'indexing', 'rank', 'keywords', 'google' ),
 			'form'        => array( 'form', 'forms', 'contact', 'contact form', 'submission', 'submissions', 'lead', 'leads', 'entries', 'fields' ),
 			'member'      => array( 'member', 'members', 'membership', 'memberships', 'subscription', 'subscriptions', 'restrict', 'access', 'level', 'levels' ),
 			'security'    => array( 'firewall', 'malware', 'scan', 'protection', 'login security', 'login lock' ),
@@ -173,6 +231,15 @@ class DACP_Site_Indexer {
 		foreach ( $dictionary as $key => $terms ) {
 			if ( false !== strpos( $s, $key ) ) {
 				$concepts = array_merge( $concepts, $terms );
+			}
+		}
+
+		// Inspect Active Plugins Description for dynamic terms
+		$active_meta = self::scan_active_plugins_metadata();
+		foreach ( $active_meta as $pslug => $pmeta ) {
+			if ( false !== strpos( $s, $pslug ) || false !== strpos( $s, strtolower( $pmeta['name'] ) ) ) {
+				$concepts = array_merge( $concepts, $pmeta['keywords'] );
+				$concepts[] = strtolower( $pmeta['name'] );
 			}
 		}
 
@@ -306,7 +373,7 @@ class DACP_Site_Indexer {
 			return $items;
 		}
 
-		$theme_name = $theme->get( 'Name' );
+		$theme_name   = $theme->get( 'Name' );
 		$domain_terms = self::get_domain_concepts( $theme_name );
 
 		// Customizer

@@ -23,9 +23,19 @@ class DACP_Menu_Indexer {
 		// 1. Get predefined configurations for core WP and common plugins (WooCommerce, Yoast, Elementor, etc.)
 		$predefined = self::get_predefined_mappings();
 
-		// Ensure menu and submenu are loaded
-		if ( empty( $menu ) ) {
-			return $predefined;
+		// Ensure global $menu and $submenu are loaded (especially in AJAX or cron contexts)
+		if ( empty( $menu ) || ! is_array( $menu ) ) {
+			global $_wp_submenu_nopriv, $_wp_menu_nopriv, $parent_file, $submenu_file;
+			if ( ! function_exists( 'add_menu_page' ) ) {
+				require_once ABSPATH . 'wp-admin/includes/admin.php';
+			}
+			if ( file_exists( ABSPATH . 'wp-admin/menu.php' ) ) {
+				require ABSPATH . 'wp-admin/menu.php';
+			}
+		}
+
+		if ( empty( $menu ) || ! is_array( $menu ) ) {
+			$menu = array();
 		}
 
 		// 2. Parse active WP Admin menus dynamically
@@ -68,6 +78,7 @@ class DACP_Menu_Indexer {
 
 					// Check if this sub_url matches a predefined item
 					$matched_predefined = self::find_matching_predefined( $sub_url, $sub_slug, $predefined );
+					$origin             = class_exists( 'DACP_Site_Indexer' ) ? DACP_Site_Indexer::detect_origin( $sub_slug, $sub_title, $sub_url ) : array( 'type' => 'plugin', 'name' => self::guess_plugin_name( $parent_title, $parent_slug ), 'slug' => sanitize_title( $parent_title ) );
 
 					if ( $matched_predefined ) {
 						$searchable_pages[ $unique_key ] = array(
@@ -75,25 +86,39 @@ class DACP_Menu_Indexer {
 							'path'        => $path,
 							'url'         => $sub_url,
 							'plugin'      => $matched_predefined['plugin'],
+							'originType'  => $origin['type'],
+							'originName'  => $matched_predefined['plugin'],
+							'originSlug'  => $origin['slug'],
 							'description' => $matched_predefined['description'],
-							'keywords'    => array_values( array_unique( array_merge( $matched_predefined['keywords'], self::generate_keywords( $sub_title, $parent_title ) ) ) ),
+							'keywords'    => array_values( array_unique( array_merge( $matched_predefined['keywords'], self::generate_keywords( $sub_title, $parent_title, $sub_slug ) ) ) ),
 						);
 					} else {
+						// Disambiguate generic "Add New" titles (e.g. Users › Add New -> Add New User)
+						$display_title = $sub_title;
+						if ( 'add new' === strtolower( trim( $sub_title ) ) && ! empty( $parent_title ) ) {
+							$singular_parent = rtrim( $parent_title, 's' );
+							$display_title   = 'Add New ' . $singular_parent;
+						}
+
 						// Create dynamic entry
 						$searchable_pages[ $unique_key ] = array(
-							'title'       => $sub_title,
+							'title'       => $display_title,
 							'path'        => $path,
 							'url'         => $sub_url,
-							'plugin'      => self::guess_plugin_name( $parent_title, $parent_slug ),
-							'description' => sprintf( __( 'Go to the %s page under %s settings.', 'dhruval-admin-command-palette' ), $sub_title, $parent_title ),
-							'keywords'    => self::generate_keywords( $sub_title, $parent_title ),
+							'plugin'      => $origin['name'],
+							'originType'  => $origin['type'],
+							'originName'  => $origin['name'],
+							'originSlug'  => $origin['slug'],
+							'description' => sprintf( __( 'Go to the %s page under %s settings.', 'dhruval-admin-command-palette' ), $display_title, $parent_title ),
+							'keywords'    => self::generate_keywords( $display_title, $parent_title, $sub_slug ),
 						);
 					}
 				}
 			} else {
 				// Standalone parent menu item
-				$unique_key = md5( $parent_url );
+				$unique_key         = md5( $parent_url );
 				$matched_predefined = self::find_matching_predefined( $parent_url, $parent_slug, $predefined );
+				$origin             = class_exists( 'DACP_Site_Indexer' ) ? DACP_Site_Indexer::detect_origin( $parent_slug, $parent_title, $parent_url ) : array( 'type' => 'plugin', 'name' => self::guess_plugin_name( $parent_title, $parent_slug ), 'slug' => sanitize_title( $parent_title ) );
 
 				if ( $matched_predefined ) {
 					$searchable_pages[ $unique_key ] = array(
@@ -101,17 +126,23 @@ class DACP_Menu_Indexer {
 						'path'        => $parent_title,
 						'url'         => $parent_url,
 						'plugin'      => $matched_predefined['plugin'],
+						'originType'  => $origin['type'],
+						'originName'  => $matched_predefined['plugin'],
+						'originSlug'  => $origin['slug'],
 						'description' => $matched_predefined['description'],
-						'keywords'    => array_values( array_unique( array_merge( $matched_predefined['keywords'], self::generate_keywords( $parent_title ) ) ) ),
+						'keywords'    => array_values( array_unique( array_merge( $matched_predefined['keywords'], self::generate_keywords( $parent_title, '', $parent_slug ) ) ) ),
 					);
 				} else {
 					$searchable_pages[ $unique_key ] = array(
 						'title'       => $parent_title,
 						'path'        => $parent_title,
 						'url'         => $parent_url,
-						'plugin'      => self::guess_plugin_name( $parent_title, $parent_slug ),
+						'plugin'      => $origin['name'],
+						'originType'  => $origin['type'],
+						'originName'  => $origin['name'],
+						'originSlug'  => $origin['slug'],
 						'description' => sprintf( __( 'Manage your %s settings and features.', 'dhruval-admin-command-palette' ), $parent_title ),
-						'keywords'    => self::generate_keywords( $parent_title ),
+						'keywords'    => self::generate_keywords( $parent_title, '', $parent_slug ),
 					);
 				}
 			}
@@ -263,11 +294,68 @@ class DACP_Menu_Indexer {
 		return array_values( array_unique( $keywords ) );
 	}
 
-	/**
-	 * Predefined detailed mappings for popular actions, tabs, and settings.
-	 */
 	private static function get_predefined_mappings() {
 		return array(
+			// WordPress Core - Users & Roles
+			'wp_user_new' => array(
+				'title'       => __( 'Add New User', 'dhruval-admin-command-palette' ),
+				'path'        => 'Users › Add New User',
+				'url'         => 'user-new.php',
+				'plugin'      => 'WordPress Core',
+				'description' => __( 'Create a new user account, assign roles (Administrator, Editor, Author, Subscriber), and set credentials.', 'dhruval-admin-command-palette' ),
+				'keywords'    => array( 'user', 'users', 'add user', 'new user', 'add new user', 'create user', 'register user', 'username', 'email', 'role', 'subscriber', 'administrator' ),
+			),
+			'wp_users_all' => array(
+				'title'       => __( 'All Users List', 'dhruval-admin-command-palette' ),
+				'path'        => 'Users › All Users',
+				'url'         => 'users.php',
+				'plugin'      => 'WordPress Core',
+				'description' => __( 'View, manage, edit, or delete existing WordPress user accounts and member profiles.', 'dhruval-admin-command-palette' ),
+				'keywords'    => array( 'user', 'users', 'all users', 'user list', 'search users', 'manage users', 'roles', 'members' ),
+			),
+			'wp_profile' => array(
+				'title'       => __( 'Edit My Profile', 'dhruval-admin-command-palette' ),
+				'path'        => 'Users › Profile',
+				'url'         => 'profile.php',
+				'plugin'      => 'WordPress Core',
+				'description' => __( 'Edit your admin user profile name, email, avatar, password, color scheme, and application passwords.', 'dhruval-admin-command-palette' ),
+				'keywords'    => array( 'profile', 'my profile', 'password', 'edit profile', 'change password', 'user email', 'display name', 'nickname', 'avatar' ),
+			),
+
+			// WordPress Core - Posts & Pages
+			'wp_post_new' => array(
+				'title'       => __( 'Add New Post', 'dhruval-admin-command-palette' ),
+				'path'        => 'Posts › Add New Post',
+				'url'         => 'post-new.php',
+				'plugin'      => 'WordPress Core',
+				'description' => __( 'Create and publish a new blog post entry.', 'dhruval-admin-command-palette' ),
+				'keywords'    => array( 'post', 'posts', 'add post', 'new post', 'create post', 'write post', 'blog' ),
+			),
+			'wp_page_new' => array(
+				'title'       => __( 'Add New Page', 'dhruval-admin-command-palette' ),
+				'path'        => 'Pages › Add New Page',
+				'url'         => 'post-new.php?post_type=page',
+				'plugin'      => 'WordPress Core',
+				'description' => __( 'Create and publish a new page entry.', 'dhruval-admin-command-palette' ),
+				'keywords'    => array( 'page', 'pages', 'add page', 'new page', 'create page', 'build page', 'landing page' ),
+			),
+			'wp_plugins_all' => array(
+				'title'       => __( 'Installed Plugins List', 'dhruval-admin-command-palette' ),
+				'path'        => 'Plugins › Installed Plugins',
+				'url'         => 'plugins.php',
+				'plugin'      => 'WordPress Core',
+				'description' => __( 'View, activate, deactivate, or delete installed WordPress plugins.', 'dhruval-admin-command-palette' ),
+				'keywords'    => array( 'plugins', 'installed plugins', 'manage plugins', 'activate plugin', 'deactivate plugin', 'plugin list' ),
+			),
+			'wp_plugin_new' => array(
+				'title'       => __( 'Add New Plugin', 'dhruval-admin-command-palette' ),
+				'path'        => 'Plugins › Add New Plugin',
+				'url'         => 'plugin-install.php',
+				'plugin'      => 'WordPress Core',
+				'description' => __( 'Search and install new plugins from WordPress.org repository or upload zip packages.', 'dhruval-admin-command-palette' ),
+				'keywords'    => array( 'add plugin', 'install plugin', 'new plugin', 'upload plugin', 'search plugins', 'wordpress.org' ),
+			),
+
 			// WooCommerce Settings Tabs (Deep links)
 			'wc_shipping' => array(
 				'title'       => __( 'Shipping Settings', 'dhruval-admin-command-palette' ),
@@ -416,6 +504,34 @@ class DACP_Menu_Indexer {
 				'plugin'      => 'WordPress Core',
 				'description' => __( 'Create navigation menus, drag and drop custom links, page hierarchies, category folders, and location bindings.', 'dhruval-admin-command-palette' ),
 				'keywords'    => array( 'menus', 'navigation', 'header menu', 'footer menu', 'links', 'custom links', 'dropdown' ),
+			),
+
+			// SureRank SEO
+			'surerank_dashboard' => array(
+				'title'       => __( 'SureRank SEO Dashboard & Settings', 'dhruval-admin-command-palette' ),
+				'path'        => 'SureRank › Dashboard',
+				'url'         => 'admin.php?page=surerank',
+				'plugin'      => 'SureRank',
+				'description' => __( 'SureRank SEO dashboard, search engine optimization settings, rankings, meta titles, descriptions, and sitemaps.', 'dhruval-admin-command-palette' ),
+				'keywords'    => array( 'surerank', 'seo', 'seo settings', 'change seo settings', 'search engine', 'rankings', 'dashboard', 'seo overview', 'seo score', 'sitemap', 'meta' ),
+			),
+			'surerank_settings' => array(
+				'title'       => __( 'SureRank Global SEO Settings', 'dhruval-admin-command-palette' ),
+				'path'        => 'SureRank › Settings',
+				'url'         => 'admin.php?page=surerank-settings',
+				'plugin'      => 'SureRank',
+				'description' => __( 'Configure SureRank SEO global options, site title formats, social metadata, and search engine indexing preferences.', 'dhruval-admin-command-palette' ),
+				'keywords'    => array( 'surerank', 'seo', 'seo settings', 'change seo settings', 'search engine', 'meta title', 'meta description', 'social meta', 'google' ),
+			),
+
+			// Starter Templates
+			'starter_templates' => array(
+				'title'       => __( 'Starter Templates Library', 'dhruval-admin-command-palette' ),
+				'path'        => 'Appearance › Starter Templates',
+				'url'         => 'themes.php?page=starter-templates',
+				'plugin'      => 'Starter Templates',
+				'description' => __( 'Browse, import, and change prebuilt site designs, templates, and full starter sites.', 'dhruval-admin-command-palette' ),
+				'keywords'    => array( 'starter template', 'starter templates', 'change starter template', 'starter site', 'starter sites', 'demo import', 'prebuilt sites', 'astra templates', 'templates', 'import site' ),
 			),
 
 			// Elementor

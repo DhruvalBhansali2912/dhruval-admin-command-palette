@@ -608,12 +608,28 @@
   to { transform: rotate(360deg); }
 }
 
-/* Fade animations for items */
-.wp-admin-nav-fade-in {
-  animation: wpNavFadeIn 0.25s ease-out forwards;
+/* Inline SVG Icons */
+.dacp-icon {
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+  stroke: currentColor;
 }
 
-@keyframes wpNavFadeIn {
-  from { opacity: 0; transform: translateY(5px); }
-  to { opacity: 1; transform: translateY(0); }
+.dacp-spin-icon {
+  animation: dacpSpin 1s linear infinite;
+}
+
+@keyframes dacpSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Prevent broken emoji img tags */
+.wp-admin-nav-modal-overlay img.emoji,
+.wp-admin-nav-dashboard-wrap img.emoji {
+  display: inline-block !important;
+  width: 1.2em !important;
+  height: 1.2em !important;
+  vertical-align: -0.1em !important;
 }

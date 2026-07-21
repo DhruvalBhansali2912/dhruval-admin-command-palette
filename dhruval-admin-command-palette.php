@@ -3,7 +3,7 @@
 Plugin Name: Dhruval Admin Command Palette
 Plugin URI: https://inventkid.com/
 Description: A textbox-based Spotlight/Raycast-like navigation command palette for the WordPress Admin Dashboard. Instantly find pages or search plugins on WordPress.org.
-Version: 1.3.1
+Version: 2.5.0
 Author: Dhruval Bhansali
 Author URI: https://profiles.wordpress.org/dhruvalbhansali1608/
 License: GPLv2 or later
@@ -122,19 +122,23 @@ class DACP_Main {
 					</p>
 				</div>
 				<button id="dacp-reindex-btn" class="wp-admin-nav-btn wp-admin-nav-btn-outline" style="white-space: nowrap; margin-top: 8px;">
-					🔄 <?php esc_html_e( 'Re-index Site Now', 'dhruval-admin-command-palette' ); ?>
+					<svg class="dacp-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg> <?php esc_html_e( 'Re-index Site Now', 'dhruval-admin-command-palette' ); ?>
 				</button>
 			</div>
 			
 			<div class="wp-admin-nav-inline-search-container">
 				<div class="wp-admin-nav-search-box-wrapper">
-					<span class="wp-admin-nav-search-icon">🔍</span>
+					<span class="wp-admin-nav-search-icon">
+						<svg class="dacp-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+					</span>
 					<input type="text" id="wp-admin-nav-inline-search-input" placeholder="<?php esc_attr_e( 'What would you like to configure? (e.g., "I want to set shipping rates")', 'dhruval-admin-command-palette' ); ?>" autocomplete="off" />
 				</div>
 				
 				<div id="wp-admin-nav-inline-results" class="wp-admin-nav-results-list">
 					<div class="wp-admin-nav-initial-state">
-						<span class="wp-admin-nav-state-icon">💡</span>
+						<span class="wp-admin-nav-state-icon">
+							<svg class="dacp-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"></path><path d="M10 22h4"></path><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1.55.64 2.94 1.7 3.9.76.76 1.23 1.52 1.41 2.5"></path></svg>
+						</span>
 						<p><?php esc_html_e( 'Start typing your request above to get suggestions...', 'dhruval-admin-command-palette' ); ?></p>
 						<div class="wp-admin-nav-suggestions-hint">
 							<strong><?php esc_html_e( 'Try searching for:', 'dhruval-admin-command-palette' ); ?></strong>
@@ -299,25 +303,29 @@ class DACP_Main {
 		<div id="wp-admin-nav-palette" class="wp-admin-nav-modal-overlay is-hidden" style="display: none !important;">
 			<div class="wp-admin-nav-modal-container">
 				<div class="wp-admin-nav-modal-header">
-					<span class="wp-admin-nav-modal-search-icon">🔍</span>
+					<span class="wp-admin-nav-modal-search-icon">
+						<svg class="dacp-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+					</span>
 					<input type="text" id="wp-admin-nav-modal-search-input" placeholder="<?php esc_attr_e( 'Type what you want to do... (e.g. "I want to set shipping")', 'dhruval-admin-command-palette' ); ?>" autocomplete="off" />
 					<span class="wp-admin-nav-modal-close-hint">ESC</span>
 				</div>
 				<div class="wp-admin-nav-modal-body">
 					<div id="wp-admin-nav-modal-results" class="wp-admin-nav-results-list">
 						<div class="wp-admin-nav-initial-state">
-							<span class="wp-admin-nav-state-icon">⚡</span>
+							<span class="wp-admin-nav-state-icon">
+								<svg class="dacp-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+							</span>
 							<p><?php esc_html_e( 'Type a natural language command to jump to any setting screen.', 'dhruval-admin-command-palette' ); ?></p>
 							<span class="wp-admin-nav-shortcut-badge"><?php esc_html_e( 'Tip: Use Ctrl + K to toggle this palette anywhere.', 'dhruval-admin-command-palette' ); ?></span>
 						</div>
 					</div>
 				</div>
 				<div class="wp-admin-nav-modal-footer">
-					<span class="wp-admin-nav-footer-hint">⌨️ <span>↑↓</span> <?php esc_html_e( 'to navigate', 'dhruval-admin-command-palette' ); ?></span>
-					<span class="wp-admin-nav-footer-hint">↩️ <span>Enter</span> <?php esc_html_e( 'to select', 'dhruval-admin-command-palette' ); ?></span>
+					<span class="wp-admin-nav-footer-hint"><svg class="dacp-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect><line x1="6" y1="8" x2="6" y2="8.01"></line><line x1="10" y1="8" x2="10" y2="8.01"></line><line x1="14" y1="8" x2="14" y2="8.01"></line><line x1="18" y1="8" x2="18" y2="8.01"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg> <span>↑↓</span> <?php esc_html_e( 'to navigate', 'dhruval-admin-command-palette' ); ?></span>
+					<span class="wp-admin-nav-footer-hint"><svg class="dacp-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg> <span>Enter</span> <?php esc_html_e( 'to select', 'dhruval-admin-command-palette' ); ?></span>
 					<span class="wp-admin-nav-footer-hint"><span>ESC</span> <?php esc_html_e( 'to close', 'dhruval-admin-command-palette' ); ?></span>
 					<button id="dacp-reindex-btn-modal" class="wp-admin-nav-reindex-modal-btn">
-						🔄 <?php esc_html_e( 'Re-index Site', 'dhruval-admin-command-palette' ); ?>
+						<svg class="dacp-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg> <?php esc_html_e( 'Re-index Site', 'dhruval-admin-command-palette' ); ?>
 					</button>
 				</div>
 			</div>
