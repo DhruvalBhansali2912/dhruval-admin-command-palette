@@ -4,7 +4,7 @@ Donate link: https://inventkid.com/
 Tags: admin search, spotlight, command palette, navigation, woocommerce, admin menu, search plugins
 Requires at least: 5.0
 Tested up to: 7.0
-Stable tag: 1.0.1
+Stable tag: 1.0.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -40,7 +40,7 @@ It dynamically indexes all active admin menu screens. Popular pages under WooCom
 
 == Changelog ==
 
-= 1.0.1 =
+= 1.0.4 =
 * Semantic Topic Goal Boost Matrix: Added +500 points Intent Boost for primary subjects (comments, categories, taxonomies, shipping, users, themes, menus) to guarantee comments and settings screens take top priorities.
 * Subject Noun Discrimination Engine: Intercepts queries targeting specific entities to eliminate unrelated pages (e.g. "add new user" excludes "Add New Post").
 * Quoted Priority Parameter Extraction & Preposition Noise Filtering: Extracts explicit quotes first and filters sentence prepositions (that, starts with, named) from parameter extraction.
