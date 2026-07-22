@@ -3,7 +3,7 @@
 Plugin Name: Dhruval Admin Command Palette
 Plugin URI: https://inventkid.com/
 Description: A textbox-based Spotlight/Raycast-like navigation command palette for the WordPress Admin Dashboard. Instantly find pages or search plugins on WordPress.org.
-Version: 2.5.0
+Version: 1.0.1
 Author: Dhruval Bhansali
 Author URI: https://profiles.wordpress.org/dhruvalbhansali1608/
 License: GPLv2 or later
@@ -165,7 +165,7 @@ class DACP_Main {
 			'dhruval-admin-command-palette-css',
 			DACP_URL . 'assets/css/admin.css',
 			array(),
-			'1.1.0'
+			'1.0.1'
 		);
 
 		// Enqueue JS
@@ -173,7 +173,7 @@ class DACP_Main {
 			'dhruval-admin-command-palette-js',
 			DACP_URL . 'assets/js/admin.js',
 			array( 'jquery' ),
-			'1.1.0',
+			'1.0.1',
 			true
 		);
 
