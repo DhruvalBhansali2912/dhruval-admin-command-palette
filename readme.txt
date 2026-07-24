@@ -4,7 +4,7 @@ Donate link: https://inventkid.com/
 Tags: admin search, spotlight, command palette, navigation, woocommerce, admin menu, search plugins
 Requires at least: 5.0
 Tested up to: 7.0
-Stable tag: 1.0.4
+Stable tag: 1.0.6
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -39,6 +39,14 @@ Press `Ctrl + K` (Windows/Linux) or `Cmd + K` (macOS) anywhere in the admin dash
 It dynamically indexes all active admin menu screens. Popular pages under WooCommerce (Shipping, Taxes, Payments, Status, Logs, Coupons) are deep-mapped out-of-the-box.
 
 == Changelog ==
+
+= 1.0.6 =
+* WordPress.org Semantic Recommendation Resolver: Intercepts verbose natural language synonym-based searches (such as cart abandonment, slow sites, rankings) and resolves them to high-precision terms before calling the WordPress.org Plugin API, guaranteeing 100% relevant external plugin suggestions.
+
+= 1.0.5 =
+* Synonym & Intent Expansion Dictionary: Implemented query token synonym expansion for key topics (leaving the cart, abandoned checkout, speed optimization, search engine rankings).
+* Synonym-Aware Subject Noun Discrimination: Allows synonym matches to successfully satisfy the mandatory subject noun validation.
+* Cart Abandonment Synthetic Redirects: Automatically suggests optimized checkout flows and plugins to recover abandoned carts on WordPress.org.
 
 = 1.0.4 =
 * Semantic Topic Goal Boost Matrix: Added +500 points Intent Boost for primary subjects (comments, categories, taxonomies, shipping, users, themes, menus) to guarantee comments and settings screens take top priorities.

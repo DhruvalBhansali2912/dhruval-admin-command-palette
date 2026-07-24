@@ -23,7 +23,13 @@ class DACP_Menu_Indexer {
 		// 1. Get predefined configurations for core WP and common plugins (WooCommerce, Yoast, Elementor, etc.)
 		$predefined = self::get_predefined_mappings();
 
-		// Ensure global $menu and $submenu are loaded (especially in AJAX or cron contexts)
+		// If we are not in the admin context or don't have sufficient privileges (e.g. Cron, CLI, or non-admin background task),
+		// return the predefined fallbacks directly to avoid fatal errors from loading menu.php without admin classes.
+		if ( ! is_admin() || ! current_user_can( 'manage_options' ) ) {
+			return array_values( $predefined );
+		}
+
+		// Ensure global $menu and $submenu are loaded (especially in AJAX or admin contexts)
 		if ( empty( $menu ) || ! is_array( $menu ) ) {
 			global $_wp_submenu_nopriv, $_wp_menu_nopriv, $parent_file, $submenu_file;
 			if ( ! function_exists( 'add_menu_page' ) ) {

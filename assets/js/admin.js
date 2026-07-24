@@ -522,6 +522,165 @@
           });
         }
 
+        if (/abandon|leaving.*cart|leaving.*checkout|finishing.*checkout|lost.*sale/i.test(query)) {
+          syntheticPages.push({
+            title: 'CartFlows Checkout Optimization',
+            path: 'CartFlows › Funnels',
+            url: adminUrl + 'admin.php?page=cartflows',
+            plugin: 'CartFlows',
+            description: 'Reduce cart abandonment by creating optimized frictionless checkout funnels.',
+            keywords: ['abandoned', 'abandonment', 'recovery', 'checkout', 'funnel', 'cartflows', 'leaving']
+          });
+
+          syntheticPages.push({
+            title: 'Search Cart Abandonment Plugins on WordPress.org',
+            path: 'Plugins › Add New › WordPress.org',
+            url: adminUrl + 'plugin-install.php?tab=search&s=' + encodeURIComponent('abandoned cart recovery'),
+            plugin: 'WordPress Core',
+            description: 'Find and install plugins to automatically recover cart abandonments and email customers who do not finish checkout.',
+            keywords: ['abandoned', 'recovery', 'cart', 'checkout', 'plugins']
+          });
+        }
+
+        // --- Synonym Expansion Dictionary ---
+        const synonymDictionary = {
+          // Cart Abandonment & Checkout Optimization
+          'abandon': ['abandoned', 'abandonment', 'recovery', 'cartflows', 'funnel', 'checkout', 'leaving'],
+          'abandoned': ['abandonment', 'recovery', 'cartflows', 'funnel', 'checkout', 'leaving', 'lost'],
+          'abandonment': ['abandoned', 'recovery', 'cartflows', 'funnel', 'checkout', 'leaving', 'lost'],
+          'leaving': ['abandoned', 'abandonment', 'recovery', 'cartflows', 'funnel', 'checkout', 'lost', 'exit', 'cart'],
+          'exit': ['leaving', 'abandoned', 'abandonment', 'recovery', 'exit intent'],
+          'lost': ['abandoned', 'abandonment', 'recovery'],
+          'checkout': ['cartflows', 'funnel', 'payment', 'purchase', 'buy', 'transaction', 'leaving'],
+          'payment': ['gateway', 'checkout', 'paypal', 'stripe', 'bacs', 'cod', 'card'],
+          
+          // SEO & Rankings (SureRank)
+          'seo': ['surerank', 'sitemap', 'meta', 'rank', 'google', 'rankings', 'analytics', 'traffic'],
+          'surerank': ['seo', 'sitemap', 'meta', 'rank', 'google', 'rankings'],
+          'rank': ['seo', 'surerank', 'sitemap', 'meta', 'google', 'rankings'],
+          'rankings': ['seo', 'surerank', 'sitemap', 'meta', 'google', 'rank'],
+          'google': ['seo', 'surerank', 'sitemap', 'meta', 'rankings'],
+          'sitemap': ['seo', 'surerank', 'meta', 'rankings'],
+
+          // Speed & Performance Optimization
+          'speed': ['cache', 'caching', 'performance', 'optimize', 'minify', 'slow', 'fast', 'optimisation'],
+          'slow': ['cache', 'caching', 'performance', 'optimize', 'speed', 'fast'],
+          'fast': ['cache', 'caching', 'performance', 'optimize', 'speed', 'slow'],
+          'cache': ['caching', 'speed', 'optimize', 'performance', 'slow'],
+          'caching': ['cache', 'speed', 'optimize', 'performance', 'slow'],
+          'performance': ['cache', 'caching', 'speed', 'optimize', 'slow'],
+
+          // Themes & Layout Design
+          'theme': ['customize', 'customizer', 'css', 'layout', 'appearance', 'design', 'starter template', 'astra'],
+          'themes': ['customize', 'customizer', 'css', 'layout', 'appearance', 'design', 'starter template', 'astra'],
+          'design': ['customize', 'customizer', 'css', 'layout', 'appearance', 'theme', 'starter template', 'astra'],
+          'appearance': ['customize', 'customizer', 'css', 'layout', 'theme', 'design', 'starter template', 'astra'],
+          'customize': ['theme', 'design', 'layout', 'appearance', 'customizer', 'css'],
+          'customizer': ['theme', 'design', 'layout', 'appearance', 'customize', 'css'],
+          'styling': ['customize', 'customizer', 'css', 'design', 'theme'],
+          'layout': ['theme', 'design', 'customize', 'customizer', 'appearance'],
+          'astra': ['theme', 'customize', 'customizer', 'appearance', 'starter template'],
+
+          // WooCommerce & Store Operations
+          'shop': ['woocommerce', 'woo', 'orders', 'products', 'checkout', 'store', 'ecommerce'],
+          'store': ['woocommerce', 'woo', 'orders', 'products', 'checkout', 'shop', 'ecommerce'],
+          'ecommerce': ['woocommerce', 'woo', 'orders', 'products', 'checkout', 'shop', 'store'],
+          'woocommerce': ['shop', 'store', 'ecommerce', 'orders', 'products', 'checkout', 'woo', 'payment', 'shipping'],
+          'woo': ['shop', 'store', 'ecommerce', 'orders', 'products', 'checkout', 'woocommerce', 'payment', 'shipping'],
+          
+          // Products & Inventory
+          'product': ['products', 'item', 'items', 'goods', 'inventory', 'stock', 'pricing', 'catalog'],
+          'products': ['product', 'item', 'items', 'goods', 'inventory', 'stock', 'pricing', 'catalog'],
+          'item': ['product', 'products', 'inventory', 'stock', 'goods'],
+          'items': ['product', 'products', 'inventory', 'stock', 'goods'],
+          'inventory': ['product', 'products', 'stock', 'catalog'],
+          'stock': ['product', 'products', 'inventory', 'catalog'],
+          'pricing': ['product', 'products', 'tax', 'cost'],
+
+          // Orders & Customers
+          'order': ['orders', 'purchase', 'invoice', 'customer', 'billing', 'transactions'],
+          'orders': ['order', 'purchase', 'invoice', 'customer', 'billing', 'transactions'],
+          'purchase': ['order', 'orders', 'invoice', 'customer', 'billing', 'transactions'],
+          'invoice': ['order', 'orders', 'billing', 'pdf'],
+          'customer': ['user', 'profile', 'order', 'orders', 'member'],
+          'customers': ['user', 'profile', 'order', 'orders', 'member'],
+
+          // Coupons & Discounts
+          'coupon': ['coupons', 'discount', 'discounts', 'promotion', 'voucher', 'shop_coupon'],
+          'coupons': ['coupon', 'discount', 'discounts', 'promotion', 'voucher', 'shop_coupon'],
+          'discount': ['coupon', 'coupons', 'discounts', 'promotion', 'voucher'],
+          'discounts': ['coupon', 'coupons', 'discount', 'promotion', 'voucher'],
+
+          // Shipping & Delivery
+          'shipping': ['delivery', 'rates', 'postage', 'zones', 'flat rate', 'free shipping', 'class'],
+          'delivery': ['shipping', 'rates', 'postage', 'zones', 'flat rate', 'free shipping'],
+          'postage': ['shipping', 'delivery', 'rates', 'zones'],
+
+          // Tax & VAT
+          'tax': ['vat', 'gst', 'taxes', 'rates'],
+          'taxes': ['tax', 'vat', 'gst', 'rates'],
+          'vat': ['tax', 'taxes', 'gst', 'rates'],
+          'gst': ['tax', 'taxes', 'vat', 'rates'],
+
+          // Users & Profiles
+          'user': ['users', 'profile', 'role', 'roles', 'member', 'members', 'capabilities', 'permissions'],
+          'users': ['user', 'profile', 'role', 'roles', 'member', 'members', 'capabilities', 'permissions'],
+          'member': ['user', 'profile', 'role', 'members'],
+          'members': ['user', 'profile', 'role', 'member'],
+          'role': ['user', 'profile', 'member', 'capabilities', 'permission'],
+          'roles': ['user', 'profile', 'member', 'capabilities', 'role', 'permission'],
+          'permission': ['role', 'roles', 'capabilities', 'permissions'],
+          'permissions': ['role', 'roles', 'capabilities', 'permission'],
+
+          // Media & Uploads
+          'image': ['media', 'library', 'upload', 'file', 'attachment', 'images', 'photo'],
+          'images': ['media', 'library', 'upload', 'file', 'attachment', 'image', 'photo'],
+          'photo': ['media', 'library', 'upload', 'file', 'attachment', 'image', 'images'],
+          'upload': ['media', 'library', 'image', 'images', 'file', 'attachment'],
+          'file': ['media', 'library', 'upload', 'attachment', 'files', 'pdf'],
+          'files': ['media', 'library', 'upload', 'attachment', 'file', 'pdf'],
+
+          // Posts & Blog
+          'blog': ['post', 'posts', 'writing', 'article', 'story', 'news'],
+          'post': ['blog', 'posts', 'writing', 'article', 'story', 'news'],
+          'posts': ['blog', 'post', 'writing', 'article', 'story', 'news'],
+          'article': ['post', 'posts', 'blog', 'writing'],
+          'writing': ['post', 'posts', 'blog', 'article'],
+
+          // Comments & Discussions
+          'comment': ['comments', 'discussion', 'reply', 'replies', 'moderation', 'spam', 'blacklist'],
+          'comments': ['comment', 'discussion', 'reply', 'replies', 'moderation', 'spam', 'blacklist'],
+          'discussion': ['comment', 'comments', 'reply', 'replies', 'moderation', 'spam'],
+          'reply': ['comment', 'comments', 'discussion'],
+
+          // Plugins & Extensions
+          'plugin': ['plugins', 'extension', 'extensions', 'addon', 'addons', 'install'],
+          'plugins': ['plugin', 'extension', 'extensions', 'addon', 'addons', 'install'],
+          'extension': ['plugin', 'plugins', 'addon', 'addons'],
+          'addon': ['plugin', 'plugins', 'extension', 'extensions'],
+
+          // Settings & Configuration
+          'settings': ['options', 'configuration', 'configure', 'setup', 'preferences'],
+          'options': ['settings', 'configuration', 'configure', 'setup', 'preferences'],
+          'configure': ['settings', 'options', 'configuration', 'setup'],
+
+          // Security & Protection
+          'security': ['protection', 'wordfence', 'login', 'firewall', 'hack', 'safe'],
+          'protection': ['security', 'wordfence', 'login', 'firewall', 'hack', 'safe'],
+          'wordfence': ['security', 'protection', 'login', 'firewall'],
+
+          // Permalinks & Links
+          'permalink': ['permalinks', 'slug', 'url', 'links', 'structure'],
+          'permalinks': ['permalink', 'slug', 'url', 'links', 'structure'],
+          'slug': ['permalink', 'permalinks', 'url', 'links'],
+          'url': ['permalink', 'permalinks', 'slug', 'links']
+        };
+
+        const getSynonyms = (token) => {
+          const lowerToken = token.toLowerCase();
+          return synonymDictionary[lowerToken] || [];
+        };
+
         // --- Subject Noun Discrimination & Dynamic Title Hierarchy Engine ---
         const actionModifierSet = new Set([
           'i', 'want', 'to', 'how', 'do', 'can', 'should', 'the', 'a', 'an', 'on', 'in',
@@ -553,7 +712,8 @@
           { pattern: /tax|taxes|vat|gst/i, targetPattern: /tax|vat/i },
           { pattern: /theme|appearance|customizer|customize/i, targetPattern: /theme|customize|appearance/i },
           { pattern: /menu|menus|navigation|header\s+menu/i, targetPattern: /menu|navigation/i },
-          { pattern: /user|users|profile|role|members/i, targetPattern: /user|profile|role/i }
+          { pattern: /user|users|profile|role|members/i, targetPattern: /user|profile|role/i },
+          { pattern: /abandon|leaving.*cart|leaving.*checkout|finishing.*checkout/i, targetPattern: /cartflows|checkout|funnel/i }
         ];
 
         const results = this.pages.map((page, idx) => {
@@ -567,13 +727,16 @@
           const kwsLower = Array.isArray(page.keywords) ? page.keywords.join(' ').toLowerCase() : (page.keywords && typeof page.keywords === 'object' ? Object.values(page.keywords).join(' ').toLowerCase() : '');
           const searchableText = `${titleLower} ${pluginLower} ${pathLower} ${kwsLower}`;
 
-          // MANDATORY SUBJECT NOUN DISCRIMINATION:
-          // If query specifies a Subject Noun (e.g. "user" in "add new user"),
-          // candidate page MUST match at least one subject noun in title, path, plugin, or keywords!
+          // MANDATORY SUBJECT NOUN DISCRIMINATION WITH SYNONYM SUPPORT:
+          // If query specifies a Subject Noun (e.g. "leaving" in our example),
+          // candidate page MUST match at least one subject noun OR its synonyms in title, path, plugin, or keywords!
           if (hasSubjectNouns) {
             const matchesSubjectNoun = subjectNouns.some(subject => {
               const stemmed = stem(subject);
-              return searchableText.includes(subject) || searchableText.includes(stemmed);
+              const synonyms = getSynonyms(subject);
+              return searchableText.includes(subject) || 
+                     searchableText.includes(stemmed) ||
+                     synonyms.some(syn => searchableText.includes(syn) || searchableText.includes(stem(syn)));
             });
 
             if (!matchesSubjectNoun) {
@@ -584,9 +747,10 @@
           let score = 0;
           let matchedTokensCount = 0;
 
-          // 1. Evaluate Token Matches across Title, Path, Keywords, and Description
+          // 1. Evaluate Token Matches & Synonyms across Title, Path, Keywords, and Description
           unstemmedTokens.forEach(token => {
             const stemmed = stem(token);
+            const synonyms = getSynonyms(token);
             let tokenMatched = false;
 
             // Title matches (Highest Priority: +100 points per token)
@@ -604,10 +768,30 @@
               score += 30;
               tokenMatched = true;
             }
-            // Description matches (+5 points per token - low weight to prevent description pollution)
+            // Description matches (+5 points per token)
             else if (descLower.includes(token) || descLower.includes(stemmed)) {
               score += 5;
               tokenMatched = true;
+            }
+
+            // Synonym matching (if direct token did not match, score synonyms at 40% value)
+            if (!tokenMatched && synonyms.length > 0) {
+              synonyms.forEach(syn => {
+                const synStemmed = stem(syn);
+                if (titleLower.includes(syn) || titleLower.includes(synStemmed)) {
+                  score += 40;
+                  tokenMatched = true;
+                } else if (pathLower.includes(syn) || pathLower.includes(synStemmed)) {
+                  score += 20;
+                  tokenMatched = true;
+                } else if (pluginLower.includes(syn) || kwsLower.includes(syn) || pluginLower.includes(synStemmed) || kwsLower.includes(synStemmed)) {
+                  score += 12;
+                  tokenMatched = true;
+                } else if (descLower.includes(syn) || descLower.includes(synStemmed)) {
+                  score += 2;
+                  tokenMatched = true;
+                }
+              });
             }
 
             if (tokenMatched) {
@@ -1182,8 +1366,29 @@
   function searchWpOrg(query, $resultsContainer, localResults) {
     renderResults(localResults, $resultsContainer, query, [], true);
 
-    // Prepare search term: strip stop words and join
-    const cleanSearch = query.toLowerCase().split(/[\s,.\-!?]+/).filter(t => !stopWords.has(t)).join(' ');
+    let cleanSearch = '';
+    const qLower = query.toLowerCase();
+
+    // Detect semantic intent and map to high-quality WordPress.org search terms
+    if (/abandon|leaving.*cart|leaving.*checkout|finishing.*checkout/i.test(qLower)) {
+      cleanSearch = 'abandoned cart recovery';
+    } else if (/speed|slow|performance|caching/i.test(qLower)) {
+      cleanSearch = 'cache speed performance';
+    } else if (/seo|rank|google|sitemap/i.test(qLower)) {
+      cleanSearch = 'seo sitemaps';
+    } else if (/form|contact|lead/i.test(qLower)) {
+      cleanSearch = 'contact form';
+    } else if (/member|subscription|membership/i.test(qLower)) {
+      cleanSearch = 'membership';
+    } else if (/security|wordfence|protection|hack/i.test(qLower)) {
+      cleanSearch = 'security firewall';
+    } else if (/theme|customize|design|layout/i.test(qLower)) {
+      cleanSearch = 'themes templates';
+    } else {
+      // Fallback: Strip stop words and take the first 3 key terms to avoid overloading the WordPress.org API
+      const keyTerms = qLower.split(/[\s,.\-!?]+/).filter(t => !stopWords.has(t));
+      cleanSearch = keyTerms.slice(0, 3).join(' ');
+    }
 
     // Call AJAX action in WordPress
     if (typeof ajaxurl !== 'undefined') {
