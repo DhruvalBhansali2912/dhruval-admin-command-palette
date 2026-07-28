@@ -31,6 +31,13 @@ class DACP_Site_Indexer {
 	}
 
 	/**
+	 * Mark the index as dirty by deleting the cached option.
+	 */
+	public static function mark_dirty() {
+		delete_option( self::OPTION_KEY );
+	}
+
+	/**
 	 * Run complete site re-index, save to database option, and return index.
 	 *
 	 * @return array

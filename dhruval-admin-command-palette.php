@@ -3,7 +3,7 @@
 Plugin Name: Dhruval Admin Command Palette
 Plugin URI: https://inventkid.com/
 Description: A textbox-based Spotlight/Raycast-like navigation command palette for the WordPress Admin Dashboard. Instantly find pages or search plugins on WordPress.org.
-Version: 1.0.6
+Version: 1.1.0
 Author: Dhruval Bhansali
 Author URI: https://profiles.wordpress.org/dhruvalbhansali1608/
 License: GPLv2 or later
@@ -59,9 +59,9 @@ class DACP_Main {
 
 		// Scheduled cron & event-driven auto-reindexing
 		add_action( 'dacp_daily_reindex_event', array( 'DACP_Site_Indexer', 'reindex_all' ) );
-		add_action( 'activated_plugin', array( 'DACP_Site_Indexer', 'reindex_all' ) );
-		add_action( 'deactivated_plugin', array( 'DACP_Site_Indexer', 'reindex_all' ) );
-		add_action( 'after_switch_theme', array( 'DACP_Site_Indexer', 'reindex_all' ) );
+		add_action( 'activated_plugin', array( 'DACP_Site_Indexer', 'mark_dirty' ) );
+		add_action( 'deactivated_plugin', array( 'DACP_Site_Indexer', 'mark_dirty' ) );
+		add_action( 'after_switch_theme', array( 'DACP_Site_Indexer', 'mark_dirty' ) );
 
 		// Dequeue Core WP Command Palette to prevent shortcut conflicts
 		add_action( 'admin_enqueue_scripts', array( $this, 'dequeue_core_commands' ), 999 );
@@ -165,7 +165,7 @@ class DACP_Main {
 			'dhruval-admin-command-palette-css',
 			DACP_URL . 'assets/css/admin.css',
 			array(),
-			'1.0.6'
+			'1.1.0'
 		);
 
 		// Enqueue JS
@@ -173,7 +173,7 @@ class DACP_Main {
 			'dhruval-admin-command-palette-js',
 			DACP_URL . 'assets/js/admin.js',
 			array( 'jquery' ),
-			'1.0.6',
+			'1.1.0',
 			true
 		);
 

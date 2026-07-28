@@ -4,7 +4,7 @@ Donate link: https://inventkid.com/
 Tags: admin search, spotlight, command palette, navigation, woocommerce, admin menu, search plugins
 Requires at least: 5.0
 Tested up to: 7.0
-Stable tag: 1.0.6
+Stable tag: 1.1.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -39,6 +39,18 @@ Press `Ctrl + K` (Windows/Linux) or `Cmd + K` (macOS) anywhere in the admin dash
 It dynamically indexes all active admin menu screens. Popular pages under WooCommerce (Shipping, Taxes, Payments, Status, Logs, Coupons) are deep-mapped out-of-the-box.
 
 == Changelog ==
+
+= 1.1.0 =
+* Dynamic query routing extension: Added support for "assign" verb matching inside the command palette keyword heuristics to instantly trigger custom tax/category assignment cards.
+
+= 1.0.9 =
+* Advanced query parsing heuristic: Replaced rigid regex checks with a smart keyword and preposition heuristic to detect Pro database updates anywhere inside natural language query sentences (e.g. "I need to add new user with username...").
+
+= 1.0.8 =
+* Support Pro addition commands: Added command interception for "add" and "create" verbs to seamlessly trigger user creation diff checks and password generation workflows in the Pro version.
+
+= 1.0.7 =
+* Fix Premature Reindexing Fatal Errors: Changed plugin activation/deactivation hooks to set the cache dirty status rather than executing index rebuilds immediately, preventing third-party plugins (like WooCommerce or WooCommerce Payments) from throwing fatal errors due to early menu-file loads before all components are initialized.
 
 = 1.0.6 =
 * WordPress.org Semantic Recommendation Resolver: Intercepts verbose natural language synonym-based searches (such as cart abandonment, slow sites, rankings) and resolves them to high-precision terms before calling the WordPress.org Plugin API, guaranteeing 100% relevant external plugin suggestions.

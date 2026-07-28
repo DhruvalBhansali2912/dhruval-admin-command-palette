@@ -1161,13 +1161,23 @@
   function handleSearch(query, $resultsContainer, isModal) {
     clearTimeout(wporgDebounceTimer);
     
-    // Abort any in-flight WordPress.org search requests
-    if (activeWpOrgRequest) {
-      activeWpOrgRequest.abort();
-      activeWpOrgRequest = null;
+    // Intercept Pro database update/creation commands
+    const isProUpdateMode = window.dacpProMode === 'update';
+    const containsUpdateVerb = /\b(?:update|change|set|modify|add|create|assign)\b/i.test(query);
+    const hasTargetValue = /\bto\s+["']?[^"'\s]+["']?/i.test(query) || /\b(?:with|email|name|username|category)\b/i.test(query);
+    const isUpdateCommand = containsUpdateVerb && hasTargetValue;
+
+    if (window.dacpProActive && (isProUpdateMode || isUpdateCommand)) {
+      if (activeWpOrgRequest) {
+        activeWpOrgRequest.abort();
+        activeWpOrgRequest = null;
+      }
+      activeIndex = -1;
+      if (typeof window.dacpProHandleUpdateQuery === 'function') {
+        window.dacpProHandleUpdateQuery(query, $resultsContainer, isModal);
+      }
+      return;
     }
-    
-    activeIndex = -1;
 
     if (!query || query.trim().length < 2) {
       resetResults($resultsContainer, isModal);
