@@ -1,20 +1,33 @@
 === Dhruval Admin Command Palette ===
 Contributors: dhruvalbhansali1608
 Donate link: https://inventkid.com/
-Tags: admin search, spotlight, command palette, navigation, woocommerce, admin menu, search plugins
+Tags: admin search, spotlight, command palette, navigation, woocommerce
 Requires at least: 5.0
 Tested up to: 7.0
-Stable tag: 1.1.0
+Stable tag: 1.0.5
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
-A textbox-based Spotlight/Raycast-like navigation command palette for the WordPress Admin Dashboard. Instantly find pages or search plugins on WordPress.org.
+Spotlight/Raycast-like command palette for WordPress Admin. Instantly search screens, settings, and find plugins on WordPress.org with Ctrl+K.
 
 == Description ==
 
 Dhruval Admin Command Palette adds a powerful Spotlight/Raycast-like floating command palette (`Ctrl + K` or `Cmd + K`) and a dedicated dashboard search page to your WordPress Admin.
 
 Instead of clicking through hundreds of configuration screens, simply type natural language requests (e.g., "I want to set shipping rates" or "modify role for user id 5") and get instantly navigated to the exact settings screen.
+
+== Upgrade to Pro for Direct Database Writes & Rollbacks ==
+
+Dhruval Admin Command Palette Pro extends the command palette to allow executing live database changes using natural language commands!
+
+= Pro Features: =
+* **Natural Language DB Updates**: Change settings, update user profiles, modify post/page metadata directly from the command palette.
+* **Before/After Live Diffs**: Renders a clean visual diff card before committing any changes.
+* **Database Rollbacks & Logs**: Keeps a complete log of all command palette updates with one-click restoration.
+* **Master Schema Matrix**: Compiles registered taxonomies, core settings, WooCommerce columns, and user profile fields dynamically.
+* **Meta key fallback lookup**: Searches metadata database if no confident match exists.
+
+[Get Dhruval Admin Command Palette Pro Now](https://inventkid.com/)
 
 = Features =
 
@@ -40,22 +53,11 @@ It dynamically indexes all active admin menu screens. Popular pages under WooCom
 
 == Changelog ==
 
-= 1.1.0 =
-* Dynamic query routing extension: Added support for "assign" verb matching inside the command palette keyword heuristics to instantly trigger custom tax/category assignment cards.
-
-= 1.0.9 =
-* Advanced query parsing heuristic: Replaced rigid regex checks with a smart keyword and preposition heuristic to detect Pro database updates anywhere inside natural language query sentences (e.g. "I need to add new user with username...").
-
-= 1.0.8 =
-* Support Pro addition commands: Added command interception for "add" and "create" verbs to seamlessly trigger user creation diff checks and password generation workflows in the Pro version.
-
-= 1.0.7 =
-* Fix Premature Reindexing Fatal Errors: Changed plugin activation/deactivation hooks to set the cache dirty status rather than executing index rebuilds immediately, preventing third-party plugins (like WooCommerce or WooCommerce Payments) from throwing fatal errors due to early menu-file loads before all components are initialized.
-
-= 1.0.6 =
-* WordPress.org Semantic Recommendation Resolver: Intercepts verbose natural language synonym-based searches (such as cart abandonment, slow sites, rankings) and resolves them to high-precision terms before calling the WordPress.org Plugin API, guaranteeing 100% relevant external plugin suggestions.
-
 = 1.0.5 =
+* Manual Reindexing Action Hook: Hooked `dacp_reindex_now` inside ajax_reindex_now, enabling Pro to rebuild settings indexes immediately on manual reindex requests.
+* Advanced Query Parsing: Replaced regex checks with a smart keyword and preposition heuristic to detect Pro database updates anywhere inside natural language query sentences.
+* Activation/Deactivation safety: Changed activation/deactivation hooks to set cache dirty status rather than executing index rebuilds immediately, preventing fatal errors with third-party plugins.
+* WordPress.org Semantic Recommendation Resolver: Intercepts natural language synonym searches (cart abandonment, slow sites, rankings) and resolves them to high-precision terms before calling the WordPress.org Plugin API.
 * Synonym & Intent Expansion Dictionary: Implemented query token synonym expansion for key topics (leaving the cart, abandoned checkout, speed optimization, search engine rankings).
 * Synonym-Aware Subject Noun Discrimination: Allows synonym matches to successfully satisfy the mandatory subject noun validation.
 * Cart Abandonment Synthetic Redirects: Automatically suggests optimized checkout flows and plugins to recover abandoned carts on WordPress.org.

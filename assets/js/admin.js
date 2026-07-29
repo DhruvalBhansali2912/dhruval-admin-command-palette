@@ -1162,7 +1162,7 @@
     clearTimeout(wporgDebounceTimer);
     
     // Intercept Pro database update/creation commands
-    const isProUpdateMode = window.dacpProMode === 'update';
+    const isProUpdateMode = window.dacpProMode === 'update' || window.dacpProMode === 'logs';
     const containsUpdateVerb = /\b(?:update|change|set|modify|add|create|assign)\b/i.test(query);
     const hasTargetValue = /\bto\s+["']?[^"'\s]+["']?/i.test(query) || /\b(?:with|email|name|username|category)\b/i.test(query);
     const isUpdateCommand = containsUpdateVerb && hasTargetValue;

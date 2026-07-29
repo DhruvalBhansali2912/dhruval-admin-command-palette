@@ -2,8 +2,8 @@
 /*
 Plugin Name: Dhruval Admin Command Palette
 Plugin URI: https://inventkid.com/
-Description: A textbox-based Spotlight/Raycast-like navigation command palette for the WordPress Admin Dashboard. Instantly find pages or search plugins on WordPress.org.
-Version: 1.1.0
+Description: Spotlight/Raycast-like command palette for WordPress Admin. Instantly search screens, settings, and find plugins on WordPress.org with Ctrl+K.
+Version: 1.0.5
 Author: Dhruval Bhansali
 Author URI: https://profiles.wordpress.org/dhruvalbhansali1608/
 License: GPLv2 or later
@@ -102,6 +102,17 @@ class DACP_Main {
 			'dashicons-search', // Modern search magnifying glass dashicon
 			99                 // Low priority position at the bottom of the sidebar to avoid cluttering core items
 		);
+
+		// Add Go Pro submenu if Pro is not active
+		if ( ! class_exists( 'Dhruval_Admin_Command_Palette_Pro' ) ) {
+			add_submenu_page(
+				'dhruval-admin-command-palette',
+				esc_html__( 'Upgrade to Pro', 'dhruval-admin-command-palette' ),
+				'<span style="color: #ffb900; font-weight: bold;">' . esc_html__( 'Go Pro', 'dhruval-admin-command-palette' ) . '</span>',
+				'manage_options',
+				'https://inventkid.com/'
+			);
+		}
 	}
 
 	/**
@@ -125,6 +136,28 @@ class DACP_Main {
 					<svg class="dacp-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg> <?php esc_html_e( 'Re-index Site Now', 'dhruval-admin-command-palette' ); ?>
 				</button>
 			</div>
+
+			<?php
+			// Render premium upgrade banner if Pro add-on is not active
+			if ( ! class_exists( 'Dhruval_Admin_Command_Palette_Pro' ) ) {
+				?>
+				<div class="dacp-pro-upgrade-banner" style="max-width: 800px; background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 16px 20px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; box-sizing: border-box;">
+					<div style="flex: 1; min-width: 280px;">
+						<h3 style="margin: 0 0 4px 0; color: #4f46e5; font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 6px; line-height: 1.2;">
+							<span style="background: #4f46e5; color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Pro Feature</span>
+							<?php esc_html_e( 'Direct Database Updates & Logs Rollback', 'dhruval-admin-command-palette' ); ?>
+						</h3>
+						<p style="margin: 0; font-size: 13px; color: #475569; line-height: 1.4;">
+							<?php esc_html_e( 'Upgrade to execute direct database writes using natural language, preview changes before saving, keep activity logs, and revert updates with one-click rollback.', 'dhruval-admin-command-palette' ); ?>
+						</p>
+					</div>
+					<a href="https://inventkid.com/" target="_blank" class="button button-primary" style="background: #4f46e5; border-color: #4f46e5; font-weight: 600; padding: 8px 18px; height: auto; line-height: 1.5; border-radius: 6px; text-shadow: none; box-shadow: none; white-space: nowrap;">
+						<?php esc_html_e( 'Upgrade to Pro', 'dhruval-admin-command-palette' ); ?>
+					</a>
+				</div>
+				<?php
+			}
+			?>
 			
 			<div class="wp-admin-nav-inline-search-container">
 				<div class="wp-admin-nav-search-box-wrapper">
@@ -165,7 +198,7 @@ class DACP_Main {
 			'dhruval-admin-command-palette-css',
 			DACP_URL . 'assets/css/admin.css',
 			array(),
-			'1.1.0'
+			'1.2.0'
 		);
 
 		// Enqueue JS
@@ -173,7 +206,7 @@ class DACP_Main {
 			'dhruval-admin-command-palette-js',
 			DACP_URL . 'assets/js/admin.js',
 			array( 'jquery' ),
-			'1.1.0',
+			'1.2.0',
 			true
 		);
 
@@ -248,6 +281,9 @@ class DACP_Main {
 		}
 
 		$index = DACP_Site_Indexer::reindex_all();
+
+		// Trigger action hook to allow Pro or other extensions to rebuild custom indexes
+		do_action( 'dacp_reindex_now' );
 
 		wp_send_json_success( array(
 			'count' => count( $index ),
