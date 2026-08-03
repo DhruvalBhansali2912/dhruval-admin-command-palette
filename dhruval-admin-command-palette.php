@@ -3,7 +3,7 @@
 Plugin Name: Dhruval Admin Command Palette
 Plugin URI: https://inventkid.com/
 Description: Spotlight/Raycast-like command palette for WordPress Admin. Instantly search screens, settings, and find plugins on WordPress.org with Ctrl+K.
-Version: 1.0.5
+Version: 1.0.6
 Author: Dhruval Bhansali
 Author URI: https://profiles.wordpress.org/dhruvalbhansali1608/
 License: GPLv2 or later

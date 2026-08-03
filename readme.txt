@@ -4,7 +4,7 @@ Donate link: https://inventkid.com/
 Tags: admin search, spotlight, command palette, navigation, woocommerce
 Requires at least: 5.0
 Tested up to: 7.0
-Stable tag: 1.0.5
+Stable tag: 1.0.6
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -27,7 +27,7 @@ Dhruval Admin Command Palette Pro extends the command palette to allow executing
 * **Master Schema Matrix**: Compiles registered taxonomies, core settings, WooCommerce columns, and user profile fields dynamically.
 * **Meta key fallback lookup**: Searches metadata database if no confident match exists.
 
-[Get Dhruval Admin Command Palette Pro Now](https://inventkid.com/)
+[Get Dhruval Admin Command Palette Pro Now](https://inventkid.com/command-palette/)
 
 = Features =
 
@@ -52,6 +52,12 @@ Press `Ctrl + K` (Windows/Linux) or `Cmd + K` (macOS) anywhere in the admin dash
 It dynamically indexes all active admin menu screens. Popular pages under WooCommerce (Shipping, Taxes, Payments, Status, Logs, Coupons) are deep-mapped out-of-the-box.
 
 == Changelog ==
+
+= 1.0.6 =
+* Go Pro Sidebar Redirection: Injects a custom sidebar submenu link to the product website if Pro is not active.
+* In-Dashboard Upgrade Promo: Displays a modern linear-gradient promotional card on the Search Console dashboard page for free users.
+* Pro-Aware Menu Visibility: Automatically hides all upgrade promotions when the Pro plugin is active.
+* Context-Aware Modes: Supported Search, Update, and Logs modes inline on the search console page.
 
 = 1.0.5 =
 * Manual Reindexing Action Hook: Hooked `dacp_reindex_now` inside ajax_reindex_now, enabling Pro to rebuild settings indexes immediately on manual reindex requests.
