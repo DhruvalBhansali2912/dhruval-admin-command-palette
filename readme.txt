@@ -4,7 +4,7 @@ Donate link: https://inventkid.com/
 Tags: admin search, spotlight, command palette, navigation, woocommerce
 Requires at least: 5.0
 Tested up to: 7.0
-Stable tag: 1.0.6
+Stable tag: 1.0.7
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -52,6 +52,9 @@ Press `Ctrl + K` (Windows/Linux) or `Cmd + K` (macOS) anywhere in the admin dash
 It dynamically indexes all active admin menu screens. Popular pages under WooCommerce (Shipping, Taxes, Payments, Status, Logs, Coupons) are deep-mapped out-of-the-box.
 
 == Changelog ==
+
+= 1.0.7 =
+* Fix Gutenberg Block Editor White Screen: Removed php-level script deregistration of wp-commands, allowing dependencies of the block editor to load correctly without conflict. Keyboard shortcut interception is handled gracefully inside Javascript.
 
 = 1.0.6 =
 * Go Pro Sidebar Redirection: Injects a custom sidebar submenu link to the product website if Pro is not active.
