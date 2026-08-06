@@ -4,7 +4,7 @@ Donate link: https://inventkid.com/
 Tags: admin search, settings search, quick navigation, dashboard helper, menu search
 Requires at least: 5.0
 Tested up to: 7.0
-Stable tag: 1.0.8
+Stable tag: 1.0.9
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -13,6 +13,10 @@ Find any settings page instantly. Search your WordPress admin menu, settings, an
 == Description ==
 
 Finding where specific settings are hidden in WordPress can be confusing and time-consuming. **Dhruval Admin Command Palette** is a simple, friendly search tool that helps you find and open any WordPress setting screen in seconds. 
+
+= Video Demo =
+[youtube https://www.youtube.com/watch?v=30_aeyHAWvE]
+Or view the [Video Demo on YouTube](https://youtu.be/30_aeyHAWvE).
 
 It adds a clean, floating search box to your admin dashboard (which you can open by clicking the search bar or pressing `Ctrl + K` / `Cmd + K`). 
 
@@ -74,6 +78,9 @@ If you recently activated a new plugin, click the **"Re-index Site"** button at 
 Updating settings directly from the search bar (like updating WooCommerce prices or changing passwords) is a premium feature of the **Pro version**. The free version focuses on helping you find settings pages quickly.
 
 == Changelog ==
+
+= 1.0.9 =
+* further logic change
 
 = 1.0.8 =
 * Optimized search speed, responsiveness, and memory footprint.

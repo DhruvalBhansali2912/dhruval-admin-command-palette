@@ -1193,7 +1193,7 @@
     // Intercept Pro database update/creation commands
     const isProUpdateMode = window.dacpProMode === 'update' || window.dacpProMode === 'logs';
     const containsUpdateVerb = /\b(?:update|change|set|modify|add|create|assign)\b/i.test(query);
-    const hasTargetValue = /\bto\s+["']?[^"'\s]+["']?/i.test(query) || /\b(?:with|email|name|username|category)\b/i.test(query);
+    const hasTargetValue = /\b(?:to|as)\s+["']?[^"'\s]+["']?/i.test(query) || /\b(?:with|email|name|username|category)\b/i.test(query);
     const isUpdateCommand = containsUpdateVerb && hasTargetValue;
 
     if (window.dacpProActive && (isProUpdateMode || isUpdateCommand)) {
@@ -1228,13 +1228,36 @@
       currentResults = localResults;
 
       // 2. Render local results and query WP.org recommendations if triggered
-      const showWpOrg = localResults.length === 0 || isWpOrgTriggerQuery(query);
-      if (showWpOrg) {
-        searchWpOrg(query, $resultsContainer, localResults);
+      if (window.dacpProActive) {
+        $.ajax({
+          url: ajaxurl,
+          type: 'POST',
+          dataType: 'json',
+          data: {
+            action: 'dacp_search_posts',
+            query: query,
+            nonce: window.dacpProData ? window.dacpProData.nonce : ''
+          },
+          success: function(response) {
+            let combinedResults = localResults;
+            if (response.success && response.data && response.data.results) {
+              combinedResults = response.data.results.concat(localResults);
+            }
+            renderResults(combinedResults, $resultsContainer, query, [], false);
+          },
+          error: function() {
+            renderResults(localResults, $resultsContainer, query, [], false);
+          }
+        });
       } else {
-        renderResults(localResults, $resultsContainer, query, [], false);
+        const showWpOrg = localResults.length === 0 || isWpOrgTriggerQuery(query);
+        if (showWpOrg) {
+          searchWpOrg(query, $resultsContainer, localResults);
+        } else {
+          renderResults(localResults, $resultsContainer, query, [], false);
+        }
       }
-    }, 2000); // 2 seconds pause requirement
+    }, 2500); // 2.5 seconds debounce pause to prevent query flickering while typing
   }
 
   /**
