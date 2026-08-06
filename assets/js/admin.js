@@ -736,7 +736,8 @@
               const synonyms = getSynonyms(subject);
               return searchableText.includes(subject) || 
                      searchableText.includes(stemmed) ||
-                     synonyms.some(syn => searchableText.includes(syn) || searchableText.includes(stem(syn)));
+                     synonyms.some(syn => searchableText.includes(syn) || searchableText.includes(stem(syn))) ||
+                     (subject.length > 3 && getFuzzyMatchScore(subject, searchableText) >= 0.65);
             });
 
             if (!matchesSubjectNoun) {
@@ -792,6 +793,21 @@
                   tokenMatched = true;
                 }
               });
+            }
+
+            // Typo Tolerance / Fuzzy Match check
+            if (!tokenMatched && token.length > 3) {
+              const titleFuzzy = getFuzzyMatchScore(token, titleLower);
+              if (titleFuzzy >= 0.65) {
+                score += 80 * titleFuzzy;
+                tokenMatched = true;
+              } else {
+                const textFuzzy = getFuzzyMatchScore(token, `${pathLower} ${kwsLower}`);
+                if (textFuzzy >= 0.65) {
+                  score += 40 * textFuzzy;
+                  tokenMatched = true;
+                }
+              }
             }
 
             if (tokenMatched) {
@@ -984,9 +1000,11 @@
       handleSearch(query, $inlineResults, false);
     });
 
-    // 6. Keyboard navigation for modal results
-    $modalInput.on('keydown', function(e) {
-      const $cards = $modalResults.find('.wp-admin-nav-card');
+    // 6. Keyboard navigation for results
+    $modalInput.add($inlineInput).on('keydown', function(e) {
+      const isModal = $(this).attr('id') === 'wp-admin-nav-modal-search-input';
+      const $results = isModal ? $modalResults : $inlineResults;
+      const $cards = $results.find('.wp-admin-nav-card');
       if ($cards.length === 0) return;
 
       if (e.key === 'ArrowDown') {
@@ -998,9 +1016,20 @@
       } else if (e.key === 'Enter') {
         e.preventDefault();
         if (activeIndex >= 0 && activeIndex < $cards.length) {
-          const url = $cards.eq(activeIndex).data('url');
-          if (url) {
-            window.location.href = url;
+          const $activeCard = $cards.eq(activeIndex);
+          const $link = $activeCard.find('a.wp-admin-nav-btn');
+          if ($link.length > 0) {
+            const href = $link.attr('href');
+            if (href && href !== '#') {
+              window.location.href = href;
+            } else {
+              $link.trigger('click');
+            }
+          } else {
+            const url = $activeCard.data('url');
+            if (url) {
+              window.location.href = url;
+            }
           }
         }
       }
@@ -1138,7 +1167,7 @@
     $activeCard.addClass('active');
     
     // Scroll active card into view if needed
-    const container = $activeCard.parent()[0];
+    const container = $activeCard.closest('.wp-admin-nav-modal-body')[0] || $activeCard.closest('.wp-admin-nav-results-list')[0] || $activeCard.parent()[0];
     const cardEl = $activeCard[0];
     
     if (container && cardEl) {
@@ -1368,6 +1397,15 @@
         window.location.href = url;
       }
     });
+
+    // Auto-select the first card by default for keyboard navigation
+    const $allCards = $container.find('.wp-admin-nav-card');
+    if ($allCards.length > 0) {
+      activeIndex = 0;
+      changeActiveIndex(0, $allCards);
+    } else {
+      activeIndex = -1;
+    }
   }
 
   /**
@@ -1531,6 +1569,54 @@
       return (num / 1000).toFixed(0) + 'k';
     }
     return num.toString();
+  }
+
+  /**
+   * Calculate similarity score between two strings using Sørensen–Dice coefficient
+   */
+  function sorensonDice(str1, str2) {
+    str1 = str1.toLowerCase().trim();
+    str2 = str2.toLowerCase().trim();
+    if (str1 === str2) return 1.0;
+    if (str1.length < 2 || str2.length < 2) return 0.0;
+
+    const getBigrams = (str) => {
+      const bigrams = new Set();
+      for (let i = 0; i < str.length - 1; i++) {
+        bigrams.add(str.substr(i, 2));
+      }
+      return bigrams;
+    };
+
+    const bigrams1 = getBigrams(str1);
+    const bigrams2 = getBigrams(str2);
+
+    let intersection = 0;
+    bigrams1.forEach(bigram => {
+      if (bigrams2.has(bigram)) {
+        intersection++;
+      }
+    });
+
+    return (2 * intersection) / (bigrams1.size + bigrams2.size);
+  }
+
+  /**
+   * Helper to perform fuzzy match check against text words
+   */
+  function getFuzzyMatchScore(token, text) {
+    if (!token || !text || token.length <= 3) return 0;
+    const words = text.toLowerCase().split(/[^a-z0-9]+/);
+    let maxSimilarity = 0;
+    words.forEach(word => {
+      if (word.length > 2) {
+        const similarity = sorensonDice(token, word);
+        if (similarity > maxSimilarity) {
+          maxSimilarity = similarity;
+        }
+      }
+    });
+    return maxSimilarity;
   }
 
 })(jQuery);

@@ -1,57 +1,84 @@
 === Dhruval Admin Command Palette ===
 Contributors: dhruvalbhansali1608
 Donate link: https://inventkid.com/
-Tags: admin search, spotlight, command palette, navigation, woocommerce
+Tags: admin search, settings search, quick navigation, dashboard helper, menu search
 Requires at least: 5.0
 Tested up to: 7.0
-Stable tag: 1.0.7
+Stable tag: 1.0.8
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
-Spotlight/Raycast-like command palette for WordPress Admin. Instantly search screens, settings, and find plugins on WordPress.org with Ctrl+K.
+Find any settings page instantly. Search your WordPress admin menu, settings, and WooCommerce screens in a single click.
 
 == Description ==
 
-Dhruval Admin Command Palette adds a powerful Spotlight/Raycast-like floating command palette (`Ctrl + K` or `Cmd + K`) and a dedicated dashboard search page to your WordPress Admin.
+Finding where specific settings are hidden in WordPress can be confusing and time-consuming. **Dhruval Admin Command Palette** is a simple, friendly search tool that helps you find and open any WordPress setting screen in seconds. 
 
-Instead of clicking through hundreds of configuration screens, simply type natural language requests (e.g., "I want to set shipping rates" or "modify role for user id 5") and get instantly navigated to the exact settings screen.
+It adds a clean, floating search box to your admin dashboard (which you can open by clicking the search bar or pressing `Ctrl + K` / `Cmd + K`). 
 
-== Upgrade to Pro for Direct Database Writes & Rollbacks ==
+Instead of clicking through dozens of complicated menu options, just type what you want to do in plain, everyday language:
+* *"I want to change shipping rates"* -> instantly opens WooCommerce shipping setup.
+* *"Change site title"* -> goes directly to General Settings.
+* *"Add new page"* -> opens the page editor page immediately.
+* *"Manage users"* -> takes you straight to the members screen.
 
-Dhruval Admin Command Palette Pro extends the command palette to allow executing live database changes using natural language commands!
+It is designed specifically for website owners, bloggers, WooCommerce store managers, and non-technical users who want to save time and manage their sites without frustration.
 
-= Pro Features: =
-* **Natural Language DB Updates**: Change settings, update user profiles, modify post/page metadata directly from the command palette.
-* **Before/After Live Diffs**: Renders a clean visual diff card before committing any changes.
-* **Database Rollbacks & Logs**: Keeps a complete log of all command palette updates with one-click restoration.
-* **Master Schema Matrix**: Compiles registered taxonomies, core settings, WooCommerce columns, and user profile fields dynamically.
-* **Meta key fallback lookup**: Searches metadata database if no confident match exists.
+== Upgrade to Pro for Direct Settings Editing & Reverts ==
 
-[Get Dhruval Admin Command Palette Pro Now](https://inventkid.com/command-palette/)
+**Dhruval Admin Command Palette Pro** allows you to update your site's settings directly from the search bar without even opening the settings pages!
 
-= Features =
+= Easy Pro Features: =
+* **Instant Settings Updates**: Change your website name, update your email address, reset user roles, or edit WooCommerce prices and stock levels directly from the search box.
+* **Before/After Previews**: Shows you a clear comparison of what is changing before you click save.
+* **Database Safety Lock**: Double-checks and secures all updates so your website settings are never messed up.
+* **One-Click Reverts (Undo)**: Keeps a list of all changes you make, so if you make a mistake, you can undo it with a single click.
+* **Helpful Command Templates**: Displays friendly templates to click and use immediately.
 
-* **Natural Language Matching**: Client-side TF-IDF and word stemmer engine understands variations in phrasing.
-* **Global Command Palette**: Open instantly from any screen with `Ctrl + K` / `Cmd + K`.
-* **Dynamic Parameter Extraction**: Auto-detects user/post IDs, emails, or specific names inside queries and creates dynamic deep-links.
-* **WordPress.org Search Integration**: Type queries for new plugins to search WordPress.org directly from your dashboard.
-* **Super-Lightweight**: Fits in under 3ms, adds less than 6KB of script, and contains no bloated external library dependencies.
+[Get Dhruval Admin Command Palette Pro Now](https://inventkid.com/)
+
+== Features ==
+
+* **Plain English Search**: Understands synonyms, so typing "payments", "checkout", or "billing" will all guide you to the right place.
+* **Quick Search Box**: Click the search box at the top of your page or press `Ctrl + K` (Windows) / `Cmd + K` (Mac) to open it.
+* **Simple Keyboard Navigation**: Use the up and down arrow keys to highlight a result and press `Enter` to open it—no mouse click needed.
+* **Typo Friendly**: Works even if you make a spelling error (like typing "settigns" instead of "settings").
+* **Find New Plugins**: Search the WordPress.org directory for new features directly from your search box.
+* **Dark & Light Mode Integration**: Automatically matches your dashboard colors to look clean and neat.
+* **Lightweight & Fast**: Opens in a fraction of a second and won't slow down your website.
 
 == Installation ==
 
-1. Upload the plugin folder to the `/wp-content/plugins/` directory, or upload the ZIP file directly via the WordPress Plugins menu.
+1. Upload the plugin folder to your `/wp-content/plugins/` directory, or upload the ZIP file directly via the WordPress Plugins menu.
 2. Activate the plugin through the 'Plugins' screen in WordPress.
-3. Click "Command Palette" in your sidebar or press `Ctrl + K` to start searching!
+3. Click **Command Palette** in the admin sidebar or press `Ctrl + K` / `Cmd + K` to start searching!
 
 == Frequently Asked Questions ==
 
-= How do I open the global command palette? =
-Press `Ctrl + K` (Windows/Linux) or `Cmd + K` (macOS) anywhere in the admin dashboard.
+= How do I open the search bar? =
+You can click the search bar in your dashboard, or press `Ctrl + K` (on Windows/Linux) or `Cmd + K` (on macOS) from any page. Press `Escape` to close it.
 
-= Which plugins are supported by default? =
-It dynamically indexes all active admin menu screens. Popular pages under WooCommerce (Shipping, Taxes, Payments, Status, Logs, Coupons) are deep-mapped out-of-the-box.
+= Will this plugin slow down my website? =
+No. The search bar is optimized to run inside your browser. It doesn't load down your website server or database, keeping your admin area lightning-fast.
+
+= Can I use it without a mouse? =
+Yes! You can use your keyboard's up and down arrows to navigate the results list, and press `Enter` to select and go to that page.
+
+= What settings does it search? =
+It indexes all active settings pages generated by WordPress and third-party plugins like WooCommerce, Yoast SEO, Elementor, contact forms, and security plugins.
+
+= Why are new plugin settings not showing up in search? =
+If you recently activated a new plugin, click the **"Re-index Site"** button at the bottom of the search panel to update the search list.
+
+= Can I update settings directly from the search bar? =
+Updating settings directly from the search bar (like updating WooCommerce prices or changing passwords) is a premium feature of the **Pro version**. The free version focuses on helping you find settings pages quickly.
 
 == Changelog ==
+
+= 1.0.8 =
+* Optimized search speed, responsiveness, and memory footprint.
+* Improved search accuracy for natural settings queries.
+* Handled typo tolerance and keyboard-first navigation upgrades.
 
 = 1.0.7 =
 * Fix Gutenberg Block Editor White Screen: Removed php-level script deregistration of wp-commands, allowing dependencies of the block editor to load correctly without conflict. Keyboard shortcut interception is handled gracefully inside Javascript.
