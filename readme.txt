@@ -4,7 +4,7 @@ Donate link: https://inventkid.com/
 Tags: admin search, settings search, quick navigation, dashboard helper, menu search
 Requires at least: 5.0
 Tested up to: 7.0
-Stable tag: 1.0.9
+Stable tag: 1.1.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -21,10 +21,11 @@ Or view the [Video Demo on YouTube](https://youtu.be/30_aeyHAWvE).
 It adds a clean, floating search box to your admin dashboard (which you can open by clicking the search bar or pressing `Ctrl + K` / `Cmd + K`). 
 
 Instead of clicking through dozens of complicated menu options, just type what you want to do in plain, everyday language:
-* *"I want to change shipping rates"* -> instantly opens WooCommerce shipping setup.
-* *"Change site title"* -> goes directly to General Settings.
-* *"Add new page"* -> opens the page editor page immediately.
-* *"Manage users"* -> takes you straight to the members screen.
+* *“I want to update product 'Premium Hoodie' and set price as 39.99”* -> instantly queries your catalog, highlights the target product, and previews the price edit.
+* *“where can I edit my homepage settings for the website?”* -> bypasses menu navigation to direct you straight to your front-page reading settings.
+* *“help me change admin user role to subscriber”* -> identifies the user account, parses the desired role, and schedules a secure update.
+* *“update my primary email address to contact@domain.com”* -> finds the correct admin email settings and prepares the update card automatically.
+* *“set site address of my website to https://example.com”* -> resolves the URL setting options in your database without opening general settings pages.
 
 It is designed specifically for website owners, bloggers, WooCommerce store managers, and non-technical users who want to save time and manage their sites without frustration.
 
@@ -78,6 +79,9 @@ If you recently activated a new plugin, click the **"Re-index Site"** button at 
 Updating settings directly from the search bar (like updating WooCommerce prices or changing passwords) is a premium feature of the **Pro version**. The free version focuses on helping you find settings pages quickly.
 
 == Changelog ==
+
+= 1.1.0 =
+* further logic change and update tags
 
 = 1.0.9 =
 * further logic change
